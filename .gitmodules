@@ -1,0 +1,3 @@
+[submodule "omniwheel_RL_rosgazebo"]
+	path = omniwheel_RL_rosgazebo
+	url = https://github.com/hrazan/omniwheel_RL_rosgazebo.git
