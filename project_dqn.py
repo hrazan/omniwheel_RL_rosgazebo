@@ -36,7 +36,7 @@ if __name__ == '__main__':
     path = '/home/razan/experiment_data/NN_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
     resume_epoch = '4800' # change to epoch to continue from
     resume_path = path + resume_epoch
@@ -57,8 +57,8 @@ if __name__ == '__main__':
         learningRate = 0.00025
         discountFactor = 0.99
         memorySize = 1000000
-        network_inputs = 108
-        network_outputs = 3
+        network_inputs = 110
+        network_outputs = 8
         network_structure = [300,300]
         current_epoch = 0
 
