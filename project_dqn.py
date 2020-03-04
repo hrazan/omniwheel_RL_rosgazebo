@@ -36,7 +36,7 @@ if __name__ == '__main__':
     path = '/home/razan/experiment_data/NN_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
     resume_epoch = '1000' # change to epoch to continue from
     resume_path = path + resume_epoch
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         learningRate = 0.00025
         discountFactor = 0.99
         memorySize = 1000000
-        network_inputs = 110
+        network_inputs = 109
         network_outputs = 8
         network_structure = [300,300]
         current_epoch = 0
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         #ADD TRY CATCH fro this else
         with open(params_json) as outfile:
             d = json.load(outfile)
-            epochs = 2000
+            epochs = 1000
             steps = d.get('steps')
             updateTargetNetwork = d.get('updateTargetNetwork')
             explorationRate = d.get('explorationRate')
