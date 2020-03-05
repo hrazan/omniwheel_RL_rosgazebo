@@ -1,7 +1,11 @@
 # omniwheel_RL_rosgazebo
 ## Make It Works
 ### 1. Install The [Gym-Gazebo](https://github.com/erlerobot/gym-gazebo)
-### 2. Write below code to ~/gym-gazebo/gym_gazebo/__init__.py :
+### 2. Clone this repository to ~/gym-gazebo and rename it as "main_project"
+```
+git clone https://github.com/hrazan/omniwheel_RL_rosgazebo
+```
+### 3. Write below code to ~/gym-gazebo/gym_gazebo/__init__.py :
 ```
 register(
     id='GazeboProjectTurtlebot-v0',
@@ -17,7 +21,7 @@ register(
     # More arguments here
 )
 ```
-### 3. Copy project_setup.bash to ~/gym-gazebo/gym_gazebo/envs/installation
+### 4. Copy project_setup.bash to ~/gym-gazebo/gym_gazebo/envs/installation
 project_setup.bash
 ```
 #!/bin/bash
@@ -37,4 +41,4 @@ fi
  
 exec bash # reload bash
 ```
-### 4. Copy [omniwheel_RL_rosgazebo_envs](https://github.com/hrazan/omniwheel_RL_rosgazebo_envs) to ~gym-gazebo/gym_gazebo then rename it as "project_envs"
+### 5. Copy [omniwheel_RL_rosgazebo_envs](https://github.com/hrazan/omniwheel_RL_rosgazebo_envs) to ~gym-gazebo/gym_gazebo then rename it as "project_envs"
