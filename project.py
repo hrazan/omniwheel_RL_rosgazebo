@@ -114,7 +114,7 @@ if __name__ == '__main__':
             for qstate,qval in qlearn.q.items():
                 csvq.writerow([qstate[0],qstate[1],qval])
             csvQOpen.close()
-            print qlearn.q
+            print (qlearn.q)
 
         if env.goal == True : 
             total_goals += 1
