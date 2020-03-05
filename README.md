@@ -1,9 +1,9 @@
 # omniwheel_RL_rosgazebo
 ## Make It Works
 ### 1. Install The [Gym-Gazebo](https://github.com/erlerobot/gym-gazebo)
-### 2. Clone this repository to ~/gym-gazebo and rename it as "main_project"
+### 2. Clone this repository to ~/gym-gazebo and rename it as "project_main"
 ```
-git clone https://github.com/hrazan/omniwheel_RL_rosgazebo
+git clone https://github.com/hrazan/omniwheel_RL_rosgazebo project_main
 ```
 ### 3. Write below code to ~/gym-gazebo/gym_gazebo/__init__.py :
 ```
@@ -42,3 +42,6 @@ fi
 exec bash # reload bash
 ```
 ### 5. Copy [omniwheel_RL_rosgazebo_envs](https://github.com/hrazan/omniwheel_RL_rosgazebo_envs) to ~gym-gazebo/gym_gazebo then rename it as "project_envs"
+```
+git clone https://github.com/hrazan/omniwheel_RL_rosgazebo_envs project_envs
+```
