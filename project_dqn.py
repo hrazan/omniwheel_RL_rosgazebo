@@ -32,8 +32,8 @@ if __name__ == '__main__':
     env = gym.make('GazeboProjectNnTurtlebot-v0')
     #outdir = '/tmp/gazebo_gym_experiments/'
     #path = '/tmp/project_dqn_ep'
-    outdir = '/home/razan/experiment_data/NN_data/gazebo_gym_experiments/'
-    path = '/home/razan/experiment_data/NN_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/NN_data/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/NN_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
     continue_execution = False
