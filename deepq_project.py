@@ -2,9 +2,9 @@ import random
 
 import numpy as np
 from keras import Sequential, optimizers
-from keras.layers import Dense, Activation, LeakyReLU, Dropout
+from keras.layers import Dense, Activation, Dropout
 from keras.models import load_model
-from keras.regularizers import l2
+from keras.optimizers import Adam
 
 import memory
 
@@ -44,66 +44,22 @@ class DeepQ:
         targetModel = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
         self.targetModel = targetModel
 
-    def createRegularizedModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
-        bias = True
-        dropout = 0
-        regularizationFactor = 0.01
-        model = Sequential()
-        if len(hiddenLayers) == 0:
-            model.add(Dense(self.output_size, input_shape=(self.input_size,), kernel_initializer='lecun_uniform', bias=bias))
-            model.add(Activation("linear"))
-        else :
-            if regularizationFactor > 0:
-                model.add(Dense(hiddenLayers[0], input_shape=(self.input_size,), kernel_initializer='lecun_uniform', W_regularizer=l2(regularizationFactor),  bias=bias))
-            else:
-                model.add(Dense(hiddenLayers[0], input_shape=(self.input_size,), kernel_initializer='lecun_uniform', bias=bias))
-
-            if (activationType == "LeakyReLU") :
-                model.add(LeakyReLU(alpha=0.01))
-            else :
-                model.add(Activation(activationType))
-
-            for index in range(1, len(hiddenLayers)):
-                layerSize = hiddenLayers[index]
-                if regularizationFactor > 0:
-                    model.add(Dense(layerSize, kernel_initializer='lecun_uniform', W_regularizer=l2(regularizationFactor), bias=bias))
-                else:
-                    model.add(Dense(layerSize, kernel_initializer='lecun_uniform', bias=bias))
-                if (activationType == "LeakyReLU") :
-                    model.add(LeakyReLU(alpha=0.01))
-                else :
-                    model.add(Activation(activationType))
-                if dropout > 0:
-                    model.add(Dropout(dropout))
-            model.add(Dense(self.output_size, kernel_initializer='lecun_uniform', bias=bias))
-            model.add(Activation("linear"))
-        optimizer = optimizers.RMSprop(lr=learningRate, rho=0.9, epsilon=1e-06)
-        model.compile(loss="mse", optimizer=optimizer)
-        model.summary()
-        return model
-
     def createModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
         model = Sequential()
         if len(hiddenLayers) == 0:
             model.add(Dense(self.output_size, input_shape=(self.input_size,), kernel_initializer='lecun_uniform'))
-            model.add(Activation("linear"))
+            model.add(Activation(activationType))
         else :
             model.add(Dense(hiddenLayers[0], input_shape=(self.input_size,), kernel_initializer='lecun_uniform'))
-            if (activationType == "LeakyReLU") :
-                model.add(LeakyReLU(alpha=0.01))
-            else :
-                model.add(Activation(activationType))
+            model.add(Activation(activationType))
 
             for index in range(1, len(hiddenLayers)):
                 # print("adding layer "+str(index))
                 layerSize = hiddenLayers[index]
                 model.add(Dense(layerSize, kernel_initializer='lecun_uniform'))
-                if (activationType == "LeakyReLU") :
-                    model.add(LeakyReLU(alpha=0.01))
-                else :
-                    model.add(Activation(activationType))
+                model.add(Activation(activationType))
             model.add(Dense(self.output_size, kernel_initializer='lecun_uniform'))
-            model.add(Activation("linear"))
+            model.add(Activation(activationType))
         optimizer = optimizers.RMSprop(lr=learningRate, rho=0.9, epsilon=1e-06)
         model.compile(loss="mse", optimizer=optimizer)
         model.summary()
@@ -169,32 +125,6 @@ class DeepQ:
             action = self.getMaxIndex(qValues)
             #print(qValues, action)
         return action
-
-    def selectActionByProbability(self, qValues, bias):
-        qValueSum = 0
-        shiftBy = 0
-        for value in qValues:
-            if value + shiftBy < 0:
-                shiftBy = - (value + shiftBy)
-        shiftBy += 1e-06
-
-        for value in qValues:
-            qValueSum += (value + shiftBy) ** bias
-
-        probabilitySum = 0
-        qValueProbabilities = []
-        for value in qValues:
-            probability = ((value + shiftBy) ** bias) / float(qValueSum)
-            qValueProbabilities.append(probability + probabilitySum)
-            probabilitySum += probability
-        qValueProbabilities[len(qValueProbabilities) - 1] = 1
-
-        rand = random.random()
-        i = 0
-        for value in qValueProbabilities:
-            if (rand <= value):
-                return i
-            i += 1
 
     def addMemory(self, state, action, reward, newState, isFinal):
         self.memory.addMemory(state, action, reward, newState, isFinal)
