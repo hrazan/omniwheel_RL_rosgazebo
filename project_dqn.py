@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '1000' # change to epoch to continue from
+    resume_epoch = '700' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path
@@ -48,18 +48,18 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        epochs = 1000
-        steps = 1000
-        updateTargetNetwork = 10000
+        epochs = 2000
+        steps = 100
+        updateTargetNetwork = 1000
         explorationRate = 1
         minibatch_size = 64
         learnStart = 64
-        learningRate = 0.00025
+        learningRate = 0.00001
         discountFactor = 0.99
         memorySize = 1000000
         network_inputs = 109
         network_outputs = 8
-        network_structure = [300,300]
+        network_structure = [500,500]
         current_epoch = 0
 
         deepQ = deepq.DeepQ(network_inputs, network_outputs, memorySize, discountFactor, learningRate, learnStart)
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         #ADD TRY CATCH fro this else
         with open(params_json) as outfile:
             d = json.load(outfile)
-            epochs = 1000
+            epochs = 2000
             steps = d.get('steps')
             updateTargetNetwork = d.get('updateTargetNetwork')
             explorationRate = d.get('explorationRate')
@@ -139,11 +139,15 @@ if __name__ == '__main__':
                 if last100ScoresIndex >= 100:
                     last100Filled = True
                     last100ScoresIndex = 0
+                m, s = divmod(int(time.time() - start_time), 60)
+                h, m = divmod(m, 60)
                 if not last100Filled:
-                    print ("EP " + str(epoch) + " - " + format(episode_step + 1) + "/" + str(steps) + " Episode steps   Exploration=" + str(round(explorationRate, 2)))
+                    print ("EP " + str(epoch) + " - " + format(episode_step + 1) + "/" + str(steps) + " Episode steps - Cumulated R: " + str(cumulated_reward) + "   Eps=" + str(round(explorationRate, 2)) + "     Time: %d:%02d:%02d" % (h, m, s))
                 else :
+                    """
                     m, s = divmod(int(time.time() - start_time), 60)
                     h, m = divmod(m, 60)
+                    """
                     print ("EP " + str(epoch) + " - " + format(episode_step + 1) + "/" + str(steps) + " Episode steps - last100 Steps : " + str((sum(last100Scores) / len(last100Scores))) + " - Cumulated R: " + str(cumulated_reward) + "   Eps=" + str(round(explorationRate, 2)) + "     Time: %d:%02d:%02d" % (h, m, s))
                     if (epoch)%100==0:
                         #save model weights and monitoring data every 100 epochs.
