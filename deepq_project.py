@@ -60,7 +60,7 @@ class DeepQ:
                 model.add(Activation(activationType))
             model.add(Dense(self.output_size, kernel_initializer='lecun_uniform'))
             model.add(Activation(activationType))
-        optimizer = optimizers.RMSprop(lr=learningRate, rho=0.9, epsilon=1e-06)
+        optimizer = optimizers.Adam(lr=learningRate)
         model.compile(loss="mse", optimizer=optimizer)
         model.summary()
         return model
