@@ -36,9 +36,9 @@ if __name__ == '__main__':
     path = '/home/katolab/experiment_data/NN_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
-    continue_execution = False
+    continue_execution = True
     #fill this if continue_execution=True
-    resume_epoch = '2000' # change to epoch to continue from
+    resume_epoch = '8000' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path
@@ -69,10 +69,10 @@ if __name__ == '__main__':
         #ADD TRY CATCH fro this else
         with open(params_json) as outfile:
             d = json.load(outfile)
-            epochs = 2000
+            epochs = d.get('epochs') + 100
             steps = 200
             updateTargetNetwork = d.get('updateTargetNetwork')
-            explorationRate = d.get('explorationRate')
+            explorationRate = 0
             minibatch_size = d.get('minibatch_size')
             learnStart = d.get('learnStart')
             learningRate = d.get('learningRate')
@@ -141,28 +141,10 @@ if __name__ == '__main__':
                     h, m = divmod(m, 60)
                     """
                     print ("EP " + str(epoch) + " - " + format(episode_step + 1) + "/" + str(steps) + " Episode steps - last100 Steps : " + str((sum(last100Scores) / len(last100Scores))) + " - Cumulated R: " + str(cumulated_reward) + "   Eps=" + str(round(explorationRate, 2)) + "     Time: %d:%02d:%02d" % (h, m, s))
-                    if (epoch)%100==0:
-                        #save model weights and monitoring data every 100 epochs.
-                        deepQ.saveModel(path+str(epoch)+'.h5')
-                        env._flush()
-                        copy_tree(outdir,path+str(epoch))
-                        #save simulation parameters.
-                        parameter_keys = ['epochs','steps','updateTargetNetwork','explorationRate','minibatch_size','learnStart','learningRate','discountFactor','memorySize','network_inputs','network_outputs','network_structure','current_epoch']
-                        parameter_values = [epochs, steps, updateTargetNetwork, explorationRate, minibatch_size, learnStart, learningRate, discountFactor, memorySize, network_inputs, network_outputs, network_structure, epoch]
-                        parameter_dictionary = dict(zip(parameter_keys, parameter_values))
-                        with open(path+str(epoch)+'.json', 'w') as outfile:
-                            json.dump(parameter_dictionary, outfile)
 
             stepCounter += 1
-            if stepCounter % updateTargetNetwork == 0:
-                deepQ.updateTargetNetwork()
-                print ("updating target network")
 
             episode_step += 1
-
-        explorationRate *= 0.997 #epsilon decay
-        # explorationRate -= (2.0/epochs)
-        explorationRate = max (0.05, explorationRate)
 
         if epoch % 100 == 0:
             plotter.plot(env)
