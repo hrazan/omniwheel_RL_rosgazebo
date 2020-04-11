@@ -6,8 +6,8 @@ import csv
 class QLearn:
     def __init__(self, actions, epsilon, alpha, gamma):
         self.q = {}
-        if path.exists('/home/razan/experiment_data/qtable.csv'):
-            with open('/home/razan/experiment_data/qtable.csv',mode='r') as qtable:
+        if path.exists('/home/katolab/experiment_data/qtable.csv'):
+            with open('/home/katolab/experiment_data/qtable.csv',mode='r') as qtable:
                 #self.q = csv.DictReader(qtable)
                 reader = csv.reader(qtable, quoting=csv.QUOTE_NONNUMERIC)
                 #self.q = {rows[0]:rows[1] for rows in reader}

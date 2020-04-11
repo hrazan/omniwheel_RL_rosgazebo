@@ -14,6 +14,7 @@ import os
 import json
 import liveplot
 import deepq_project as deepq
+import csv
 
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     continue_execution = True
     #fill this if continue_execution=True
-    resume_epoch = '8000' # change to epoch to continue from
+    resume_epoch = '2000' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path
@@ -59,7 +60,7 @@ if __name__ == '__main__':
         memorySize = 1000000
         network_inputs = 109
         network_outputs = 5
-        network_structure = [1000,1000]
+        network_structure = [500,500,500]
         current_epoch = 0
 
         deepQ = deepq.DeepQ(network_inputs, network_outputs, memorySize, discountFactor, learningRate, learnStart)
@@ -145,6 +146,11 @@ if __name__ == '__main__':
             stepCounter += 1
 
             episode_step += 1
+
+        with open('/home/katolab/experiment_data/test.csv','a+') as csvRWRD:
+            csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
+            csvRWRD_writer.writerow([episode_step, cumulated_reward])
+        csvRWRD.close()
 
         if epoch % 100 == 0:
             plotter.plot(env)

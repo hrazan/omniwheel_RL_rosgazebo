@@ -33,8 +33,8 @@ if __name__ == '__main__':
     env = gym.make('GazeboProjectNnTurtlebot-v0')
     #outdir = '/tmp/gazebo_gym_experiments/'
     #path = '/tmp/project_dqn_ep'
-    outdir = '/home/katolab/experiment_data/NN_data/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/NN_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/NN_data_1/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/NN_data_1/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
     continue_execution = False
@@ -170,14 +170,14 @@ if __name__ == '__main__':
 
             episode_step += 1
 
-        with open('/home/katolab/experiment_data/reward.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/reward_1.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode_step, cumulated_reward])
         csvRWRD.close()
 
         explorationRate *= 0.997 #epsilon decay
         # explorationRate -= (2.0/epochs)
-        explorationRate = max (0.05, explorationRate)
+        explorationRate = max (0.2, explorationRate)
 
         if epoch % 100 == 0:
             plotter.plot(env)

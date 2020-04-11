@@ -33,7 +33,7 @@ if __name__ == '__main__':
     last_time_steps = numpy.ndarray(0)
 
     qlearn = qlearn.QLearn(actions=range(env.action_space.n),
-                    alpha=0.2, gamma=0.8, epsilon=0.9)
+                    alpha=0.2, gamma=0.8, epsilon=0.51)
 
     initial_epsilon = qlearn.epsilon
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     start_time = time.time()
     total_goals = 0
     total_succeed_steps = 0
-    total_episodes = 1001
+    total_episodes = 601
     highest_reward = -10000000
     fewest_steps = 10000000
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
         if (x>0 and x%100==0):
             plotter.plot(env)
-            csvQOpen = open('/home/razan/experiment_data/qtable.csv','w')
+            csvQOpen = open('/home/katolab/experiment_data/qtable.csv','w')
             csvq = csv.writer(csvQOpen, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             for qstate,qval in qlearn.q.items():
                 csvq.writerow([qstate[0],qstate[1],qval])
@@ -130,13 +130,13 @@ if __name__ == '__main__':
                 best_reward_file = reward_file[:]
 
             # Make txt file of best actions
-            with open('/home/razan/experiment_data/actions.txt','w') as txtfile:
+            with open('/home/katolab/experiment_data/actions.txt','w') as txtfile:
 	              for item in best_act:
 		                txtfile.write("%s" % item)
             txtfile.close()
 
             # Make csv file of best actions' detail
-            csvOpen = open('/home/razan/experiment_data/actions_details.csv','w')
+            csvOpen = open('/home/katolab/experiment_data/actions_details.csv','w')
             writer = csv.writer(csvOpen, dialect='excel')
             for act_num in range(len(best_act)):
                 writer.writerow([best_state_file[act_num], best_act[act_num], best_reward_file[act_num], best_act_time[act_num]/1000000, best_position[act_num], best_distance[act_num]])
