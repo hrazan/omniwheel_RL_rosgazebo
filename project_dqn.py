@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '1100' # change to epoch to continue from
+    resume_epoch = '100' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path

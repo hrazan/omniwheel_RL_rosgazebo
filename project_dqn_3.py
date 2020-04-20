@@ -60,7 +60,7 @@ if __name__ == '__main__':
         memorySize = 1000000
         network_inputs = 109
         network_outputs = 5
-        network_structure = [1000,1000,1000]
+        network_structure = [1000,1000]
         current_epoch = 0
 
         deepQ = deepq.DeepQ(network_inputs, network_outputs, memorySize, discountFactor, learningRate, learnStart)
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         csvRWRD.close()
 
         explorationRate *= 0.997 #epsilon decay
-        explorationRate = max (0.2, explorationRate)
+        explorationRate = max (0.05, explorationRate)
 
         if epoch % 100 == 0:
             plotter.plot(env)

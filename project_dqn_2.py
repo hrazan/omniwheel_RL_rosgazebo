@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '1000' # change to epoch to continue from
+    resume_epoch = '600' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         memorySize = 1000000
         network_inputs = 109
         network_outputs = 5
-        network_structure = [1000,1000,1000]
+        network_structure = [1000,1000]
         current_epoch = 0
 
         deepQ = deepq.DeepQ(network_inputs, network_outputs, memorySize, discountFactor, learningRate, learnStart)
@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
         explorationRate *= 0.997 #epsilon decay
         # explorationRate -= (2.0/epochs)
-        explorationRate = max (0.2, explorationRate)
+        explorationRate = max (0.05, explorationRate)
 
         if epoch % 100 == 0:
             plotter.plot(env)
