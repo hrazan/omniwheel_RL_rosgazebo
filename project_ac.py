@@ -45,7 +45,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        episodes = 2000
+        episodes = 100
         steps = 100
         updateTargetNetwork = 1000
         epsilon = 1
@@ -87,6 +87,7 @@ if __name__ == '__main__':
         clear_monitor_files(outdir)
         copy_tree(monitor_path,outdir)
 
+    env._max_episode_steps = steps # env returns done after _max_episode_steps
     env = gym.wrappers.Monitor(env, outdir,force=not continue_execution, resume=continue_execution)
 
     cur_state = env.reset()
@@ -112,13 +113,20 @@ if __name__ == '__main__':
 
             actor_critic.remember(cur_state, action, reward, new_state, done)
             actor_critic.train()
+            
+            cumulated_reward += reward
 
             cur_state = new_state
             
+            episode_step += 1
             stepCounter += 1
             if stepCounter % updateTargetNetwork == 0:
                 actor_critic.update_target()
                 print ("updating target network")
+        
+        env.reset_vel()
+        
+        print ("EP " + str(eps) + " - " + format(episode_step) + "/" + str(steps) + " Episode steps   Exploration=" + str(round(epsilon, 2)) + " - Cumulated R: " + str(cumulated_reward))
 		
         epsilon *= epsilon_decay
         epsilon = max (0.05, epsilon)

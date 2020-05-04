@@ -122,6 +122,7 @@ if __name__ == '__main__':
             newObservation, reward, done, info = env.step(action)
 
             cumulated_reward += reward
+            #print(cumulated_reward)
             if highest_reward < cumulated_reward:
                 highest_reward = cumulated_reward
 

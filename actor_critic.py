@@ -64,9 +64,9 @@ class ActorCritic:
 
 	def create_actor_model(self):
 		state_input = Input(shape=(109,))
-		h1 = Dense(512, activation='relu')(state_input)
-		h2 = Dense(512, activation='relu')(h1)
-		h3 = Dense(512, activation='relu')(h2)
+		h1 = Dense(128, activation='relu')(state_input)
+		h2 = Dense(128, activation='relu')(h1)
+		h3 = Dense(128, activation='relu')(h2)
 		output = Dense(self.env.action_space.shape[0], activation='relu')(h3)
 		
 		model = Model(input=state_input, output=output)
@@ -76,13 +76,12 @@ class ActorCritic:
 
 	def create_critic_model(self):
 		state_input = Input(shape=self.env.observation_space.shape)
-		state_h1 = Dense(512, activation='relu')(state_input)
-		state_h2 = Dense(512)(state_h1)
+		state_h1 = Dense(128, activation='relu')(state_input)
 		
 		action_input = Input(shape=self.env.action_space.shape)
-		
-		merged = Concatenate()([state_h2, action_input])
-		merged_h1 = Dense(512, activation='relu')(merged)
+		merged = Concatenate()([state_h1, action_input])
+		merged_h1 = Dense(128, activation='relu')(merged)
+		merged_h2 = Dense(128)(merged_h1)
 		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
 		
@@ -113,7 +112,7 @@ class ActorCritic:
             
 	def _train_critic(self, samples):
 		for sample in samples:
-			print(sample)
+			#print(sample)
 			cur_state, action, reward, new_state, done = sample
 			if not done:
 				target_action = self.target_actor_model.predict(new_state)
