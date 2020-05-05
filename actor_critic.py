@@ -1,173 +1,184 @@
-"""
-Actor-Critic Class
-"""
-import numpy as np
-from keras.models import Sequential, Model
-from keras.layers import Dense, Dropout, Input, Concatenate
-from keras.layers.merge import Add, Multiply
-from keras.optimizers import Adam
-import keras.backend as K
-
-import tensorflow as tf
-
 import random
-from collections import deque
+
+import numpy as np
+from keras import Sequential, optimizers
+from keras.layers import Dense, Activation, Dropout
+from keras.models import load_model
+from keras.optimizers import Adam
+
+import memory
 
 
-class ActorCritic:
-	def __init__(self, env, sess, memorySize, gamma, learningRate, batchSize):
-		self.env = env
-		self.sess = sess
+class DeepQ:
+    """
+    DQN abstraction.
 
-		self.learning_rate = learningRate
-		self.gamma = gamma
-		self.tau   = .125
-		self.batch_size = batchSize
+    As a quick reminder:
+        traditional Q-learning:
+            Q(s, a) += alpha * (reward(s,a) + gamma * max(Q(s') - Q(s,a))
+        DQN:
+            target = reward(s,a) + gamma * max(Q(s')
 
-		# ===================================================================== #
-		#                               Actor Model                             #
-		# Chain rule: find the gradient of chaging the actor network params in  #
-		# getting closest to the final value network predictions, i.e. de/dA    #
-		# Calculate de/dA as = de/dC * dC/dA, where e is error, C critic, A act #
-		# ===================================================================== #
+    """
+    def __init__(self, inputs, outputs, memorySize, discountFactor, learningRate, learnStart):
+        """
+        Parameters:
+            - inputs: input size
+            - outputs: output size
+            - memorySize: size of the memory that will store each state
+            - discountFactor: the discount factor (gamma)
+            - learningRate: learning rate
+            - learnStart: steps to happen before for learning. Set to 128
+        """
+        self.input_size = inputs
+        self.output_size = outputs
+        self.memory = memory.Memory(memorySize)
+        self.discountFactor = discountFactor
+        self.learnStart = learnStart
+        self.learningRate = learningRate
 
-		self.memory = deque(maxlen=memorySize)
-		self.actor_state_input, self.actor_model = self.create_actor_model()
-		_, self.target_actor_model = self.create_actor_model()
+    def initNetworks(self, hiddenLayers):
+        actor_model, critic_model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
+        self.actor_model = actor_model
+        self.critic_model = critic_model
 
-		self.actor_critic_grad = tf.placeholder(tf.float32, 
-			[None, self.env.action_space.shape[0]]) # where we will feed de/dC (from critic)
-		
-		actor_model_weights = self.actor_model.trainable_weights
-		self.actor_grads = tf.gradients(self.actor_model.output, 
-			actor_model_weights, -self.actor_critic_grad) # dC/dA (from actor)
-		grads = zip(self.actor_grads, actor_model_weights)
-		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
-
-		# ===================================================================== #
-		#                              Critic Model                             #
-		# ===================================================================== #		
-
-		self.critic_state_input, self.critic_action_input, \
-			self.critic_model = self.create_critic_model()
-		_, _, self.target_critic_model = self.create_critic_model()
-
-		self.critic_grads = tf.gradients(self.critic_model.output, 
-			self.critic_action_input) # where we calcaulte de/dC for feeding above
-		
-		# Initialize for later gradient calculations
-		self.sess.run(tf.initialize_all_variables())
+        target_actor_model, target_critic_model = self.createModel(self.input_size, self.output_size, hiddenLayers, "relu", self.learningRate)
+        self.target_actor_model = target_actor_model
+        self.target_critic_model = target_critic_model
 
 	# ========================================================================= #
 	#                              Model Definitions                            #
 	# ========================================================================= #
 
-	def create_actor_model(self):
-		state_input = Input(shape=(109,))
-		h1 = Dense(128, activation='relu')(state_input)
-		h2 = Dense(128, activation='relu')(h1)
-		h3 = Dense(128, activation='relu')(h2)
-		output = Dense(self.env.action_space.shape[0], activation='relu')(h3)
+    def createModel(self, inputs, outputs, hiddenLayers, activationType, learningRate):
+		adam  = Adam(lr=learningRate)        
+        
+        # Actor Network Model
+        state_input = Input(shape=(inputs, ))
+		h1 = Dense(128, activation=activationType)(state_input)
+		h2 = Dense(128, activation=activationType)(h1)
+		h3 = Dense(128, activation=activationType)(h2)
+		output = Dense(outputs, activation=activationType)(h3)
 		
-		model = Model(input=state_input, output=output)
-		adam  = Adam(lr=0.001)
-		model.compile(loss="mse", optimizer=adam)
-		return state_input, model
-
-	def create_critic_model(self):
+		actor_model = Model(inputs=state_input, outputs=output)
+		actor_model.compile(loss="mse", optimizer=adam)
+		actor_model.summary()
+		
+		# Critic Network Model
 		state_input = Input(shape=self.env.observation_space.shape)
-		state_h1 = Dense(128, activation='relu')(state_input)
+		state_h1 = Dense(128, activation=activationType)(state_input)
 		
 		action_input = Input(shape=self.env.action_space.shape)
 		merged = Concatenate()([state_h1, action_input])
-		merged_h1 = Dense(128, activation='relu')(merged)
+		merged_h1 = Dense(128, activation=activationType)(merged)
 		merged_h2 = Dense(128)(merged_h1)
-		output = Dense(1, activation='relu')(merged_h1)
-		model  = Model(input=[state_input,action_input], output=output)
-		
-		adam  = Adam(lr=0.001)
-		model.compile(loss="mse", optimizer=adam)
-		return state_input, action_input, model
+		output = Dense(1, activation=activationType)(merged_h1)
+		critic_model  = Model(inputs=[state_input,action_input], outputs=output)
+		critic_model.compile(loss="mse", optimizer=adam)
+		critic_model.summary()
+        
+        return actor_model, critic_model
 
-	# ========================================================================= #
-	#                               Model Training                              #
-	# ========================================================================= #
+    def printNetwork(self):
+        i = 0
+        for layer in self.model.layers:
+            weights = layer.get_weights()
+            print("layer ",i,": ",weights)
+            i += 1
 
-	def remember(self, cur_state, action, reward, new_state, done):
-		self.memory.append([cur_state, action, reward, new_state, done])
+    def backupNetwork(self, model, backup):
+        weightMatrix = []
+        for layer in model.layers:
+            weights = layer.get_weights()
+            weightMatrix.append(weights)
+        i = 0
+        for layer in backup.layers:
+            weights = weightMatrix[i]
+            layer.set_weights(weights)
+            i += 1
 
-	def _train_actor(self, samples):
-	    for sample in samples:
-			cur_state, action, reward, new_state, _ = sample
-			predicted_action = self.actor_model.predict(cur_state)
-			grads = self.sess.run(self.critic_grads, feed_dict={
-				self.critic_state_input:  cur_state,
-				self.critic_action_input: predicted_action
-			})[0]
+    def updateTargetNetwork(self):
+        self.backupNetwork(self.model, self.targetModel)
 
-			self.sess.run(self.optimize, feed_dict={
-				self.actor_state_input: cur_state,
-				self.actor_critic_grad: grads
-			})
-            
-	def _train_critic(self, samples):
-		for sample in samples:
-			#print(sample)
-			cur_state, action, reward, new_state, done = sample
-			if not done:
-				target_action = self.target_actor_model.predict(new_state)
-				future_reward = self.target_critic_model.predict(
-					[new_state, target_action])[0][0]
-				reward += self.gamma * future_reward
-			self.critic_model.fit([cur_state, action], reward, verbose=0)
-		
-	def train(self):
-		if len(self.memory) < self.batch_size:
-			return
+    # predict Q values for all the actions
+    def getQValues(self, state):
+        predicted = self.model.predict(state.reshape(1,len(state)))
+        #print(state)
+        #print("predicted: ",predicted)
+        return predicted[0]
 
-		samples = random.sample(self.memory, self.batch_size)
-		self._train_critic(samples)
-		self._train_actor(samples)
+    def getTargetQValues(self, state):
+        #predicted = self.targetModel.predict(state.reshape(1,len(state)))
+        predicted = self.targetModel.predict(state.reshape(1,len(state)))
 
-	# ========================================================================= #
-	#                         Target Model Updating                             #
-	# ========================================================================= #
+        return predicted[0]
 
-	def _update_actor_target(self):
-		actor_model_weights  = self.actor_model.get_weights()
-		actor_target_weights = self.target_actor_model.get_weights()
-		
-		for i in range(len(actor_target_weights)):
-			actor_target_weights[i] = actor_model_weights[i]
-		self.target_actor_model.set_weights(actor_target_weights)
+    def getMaxQ(self, qValues):
+        return np.max(qValues)
 
-	def _update_critic_target(self):
-		critic_model_weights  = self.critic_model.get_weights()
-		critic_target_weights = self.target_critic_model.get_weights()
-		
-		for i in range(len(critic_target_weights)):
-			critic_target_weights[i] = critic_model_weights[i]
-		self.target_critic_model.set_weights(critic_target_weights)		
+    def getMaxIndex(self, qValues):
+        return np.argmax(qValues)
 
-	def update_target(self):
-		self._update_actor_target()
-		self._update_critic_target()
+    # calculate the target function
+    def calculateTarget(self, qValuesNewState, reward, isFinal):
+        """
+        target = reward(s,a) + gamma * max(Q(s')
+        """
+        if isFinal:
+            return reward
+        else :
+            return reward + self.discountFactor * self.getMaxQ(qValuesNewState)
 
-	# ========================================================================= #
-	#                              Model Predictions                            #
-	# ========================================================================= #
+    # select the action with the highest Q value
+    def selectAction(self, qValues, explorationRate):
+        rand = random.random()
+        if rand < explorationRate :
+            action = np.random.randint(0, self.output_size)
+            #print('random')
+        else :
+            action = self.getMaxIndex(qValues)
+            #print(qValues, action)
+        return action
 
-	def act(self, cur_state, epsilon):
-		if np.random.random() < epsilon:
-			return self.env.action_space.sample()
-		return self.actor_model.predict(cur_state)
+    def addMemory(self, state, action, reward, newState, isFinal):
+        self.memory.addMemory(state, action, reward, newState, isFinal)
 
-	# ========================================================================= #
-	#                              Sace/Load Model                              #
-	# ========================================================================= #
-	
-	def saveModel(self, path):
-		self.model.save(path)
+    def learnOnLastState(self):
+        if self.memory.getCurrentSize() >= 1:
+            return self.memory.getMemory(self.memory.getCurrentSize() - 1)
 
-	def loadWeights(self, path):
-		self.model.set_weights(load_model(path).get_weights())
+    def learnOnMiniBatch(self, miniBatchSize, useTargetNetwork=True):
+        # Do not learn until we've got self.learnStart samples
+        if self.memory.getCurrentSize() > self.learnStart:
+            # learn in batches of 128
+            miniBatch = self.memory.getMiniBatch(miniBatchSize)
+            X_batch = np.empty((0,self.input_size), dtype = np.float64)
+            Y_batch = np.empty((0,self.output_size), dtype = np.float64)
+            for sample in miniBatch:
+                isFinal = sample['isFinal']
+                state = sample['state']
+                action = sample['action']
+                reward = sample['reward']
+                newState = sample['newState']
+
+                qValues = self.getQValues(state)
+                if useTargetNetwork:
+                    qValuesNewState = self.getTargetQValues(newState)
+                else :
+                    qValuesNewState = self.getQValues(newState)
+                targetValue = self.calculateTarget(qValuesNewState, reward, isFinal)
+
+                X_batch = np.append(X_batch, np.array([state.copy()]), axis=0)
+                Y_sample = qValues.copy()
+                Y_sample[action] = targetValue
+                Y_batch = np.append(Y_batch, np.array([Y_sample]), axis=0)
+                if isFinal:
+                    X_batch = np.append(X_batch, np.array([newState.copy()]), axis=0)
+                    Y_batch = np.append(Y_batch, np.array([[reward]*self.output_size]), axis=0)
+            self.model.fit(X_batch, Y_batch, batch_size = len(miniBatch), epochs=1, verbose = 0)
+
+    def saveModel(self, path):
+        self.model.save(path)
+
+    def loadWeights(self, path):
+        self.model.set_weights(load_model(path).get_weights())
