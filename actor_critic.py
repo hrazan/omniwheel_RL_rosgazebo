@@ -11,14 +11,15 @@ from collections import deque
 import memory 
 
 class Actor:
-    def __init__(self, sess, action_dim, observation_dim, learningRate):
+    def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
         # setting our created session as default session
         self.sess = sess
         K.set_session(sess)
         self.action_dim = action_dim
         self.observation_dim = observation_dim
         self.learningRate = learningRate
-        self.state_input, self.output, self.model = self.create_model()
+        self.state_input, self.output, self.model = self.create_model(hiddenLayer)
+        _, _, self.target_model = self.create_model(hiddenLayer)
         model_weights = self.model.trainable_weights
         # Placeholder for critic gradients with respect to action_input.
         self.actor_critic_grads = tf.placeholder(tf.float32, [None, action_dim])
@@ -32,15 +33,24 @@ class Actor:
         grads = zip(self.actor_grads, model_weights)
         self.optimize = tf.train.AdamOptimizer(self.learningRate).apply_gradients(grads)
 
-    def create_model(self):
+    def create_model(self, hiddenLayer):
+        state_h = hiddenLayer[:]
+        
+        if len(state_h)<1: error
         state_input = Input(shape=self.observation_dim)
-        state_h1 = Dense(128, activation='relu')(state_input)
-        state_h2 = Dense(128, activation='relu')(state_h1)
-        state_h3 = Dense(128, activation='relu')(state_h2)
-        output = Dense(self.action_dim, activation='softmax')(state_h2)
+        try:
+            state_h[0] = Dense(state_h[0], activation='relu')(state_input)
+        except ValueError:
+            print "Error: insert at least one hidden layer of Actor's model"
+        if len(state_h)>1:
+            for layer in xrange(1, len(state_h), 1):
+                state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
+        output = Dense(self.action_dim, activation='softmax')(state_h[-1])
+        
         model = Model(inputs=state_input, outputs=output)
         adam = Adam(lr=self.learningRate)
         model.compile(loss='categorical_crossentropy', optimizer=adam)
+        model.summary()
         return state_input, output, model
 
     def train(self, critic_gradients_val, X_states):
@@ -48,28 +58,46 @@ class Actor:
         self.sess.run(self.optimize, feed_dict={self.state_input:X_states, self.actor_critic_grads:critic_gradients_val})
 
 class Critic:
-    def __init__(self, sess, action_dim, observation_dim, learningRate):
+    def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
         # setting our created session as default session
         K.set_session(sess)
         self.sess = sess
         self.action_dim = action_dim
         self.observation_dim = observation_dim
         self.learningRate = learningRate
-        self.state_input, self.action_input, self.output, self.model = self.create_model()
+        self.state_input, self.action_input, self.output, self.model = self.create_model(hiddenLayer)
+        _, _, self.target_model = self.create_model(hiddenLayer)
         self.critic_gradients = tf.gradients(self.output, self.action_input)
 
-    def create_model(self):
-        state_input = Input(shape=self.observation_dim)
-        state_h1 = Dense(128, activation='relu')(state_input)
+    def create_model(self, hiddenLayer):
+        state_h = hiddenLayer[0][:]
+        merge_h = hiddenLayer[1][:]
         
+        # Before merging with action
+        state_input = Input(shape=self.observation_dim)
+        try:
+            state_h[0] = Dense(state_h[0], activation='relu')(state_input)
+        except ValueError:
+            print "Error: insert at least one hidden layer of Critic's model"
+        if len(state_h)>1:
+            for layer in xrange(1, len(state_h), 1):
+                state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
+        
+        # After merging with action
         action_input = Input(shape=(self.action_dim,))
-        state_action = Concatenate()([state_h1, action_input])
-        state_action_h1 = Dense(128, activation='relu')(state_action)
-        state_action_h2 = Dense(128, activation='relu')(state_action_h1)        
-        output = Dense(1, activation='linear')(state_action_h1)
-
+        merge_layer = Concatenate()([state_h[-1], action_input])
+        try:
+            merge_h[0] = Dense(merge_h[0], activation='relu')(merge_layer)
+        except ValueError:
+            print "Error: insert at least one hidden layer of Critic's model"
+        if len(merge_h)>1:
+            for layer in xrange(1, len(merge_h), 1):
+                merge_h[layer] = Dense(merge_h[layer], activation='relu')(merge_h[layer-1])
+        output = Dense(1, activation='linear')(merge_h[-1])
+        
         model = Model(inputs=[state_input, action_input], outputs=output)
         model.compile(loss="mse", optimizer=Adam(lr=self.learningRate))
+        model.summary()
         return state_input, action_input, output, model
 
     def get_critic_gradients(self, X_states, X_actions):
@@ -141,6 +169,21 @@ class ActorCritic:
     def loadWeights(self, actor_weights_path, critic_weights_path):
         self.actor.model.set_weights(load_model(actor_weights_path).get_weights())
         self.critic.model.set_weights(load_model(critic_weights_path).get_weights())
-        
-
+                
+    def updateTarget(self):
+        # Update Actor model
+        actor_model_weights  = self.actor.model.get_weights()
+		actor_target_weights = self.actor.target_model.get_weights()
+		
+		for i in range(len(actor_target_weights)):
+			actor_target_weights[i] = actor_model_weights[i]
+		self.actor.target_model.set_weights(actor_target_weights)
+		
+		# Update Critic model
+        critic_model_weights  = self.critic.model.get_weights()
+		critic_target_weights = self.critic.target_model.get_weights()
+		
+		for i in range(len(critic_target_weights)):
+			critic_target_weights[i] = critic_model_weights[i]
+		self.critic.target_model.set_weights(critic_target_weights)
 

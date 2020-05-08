@@ -59,7 +59,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 2000
+        EPISODES = 10
         STEPS = 100
         UPDATE_NETWORK = 1000
         EPSILON = 1
@@ -71,6 +71,8 @@ if __name__ == '__main__':
         C_LEARNING_RATE = 0.005
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 1000
+        A_HIDDEN_LAYER = [128,128,128]
+        C_HIDDEN_LAYER = [[128],[128,128]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -89,6 +91,8 @@ if __name__ == '__main__':
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
             MEMORY_SIZE = d.get('MEMORY_SIZE')
+            A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
+            C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             
         clear_monitor_files(outdir)
@@ -97,10 +101,10 @@ if __name__ == '__main__':
     
     # Actor model to take actions 
     # state -> action
-    actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE)
+    actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE, A_HIDDEN_LAYER)
     # Critic model to evaluate the action taken by the actor
     # state + action -> Expected reward to be achieved by taking action in the state.
-    critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE)
+    critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
     sess.run(tf.initialize_all_variables())
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE)
