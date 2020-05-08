@@ -5,22 +5,19 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Add, Input, Concatenate
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import load_model
 import tensorflow as tf
 from collections import deque
 import memory 
 
-# Hyperparameters
-REPLAY_MEMORY_SIZE = 100000
-MINIBATCH_SIZE = 64
-DISCOUNT = 0.99
-
-class Actor(object):
-    def __init__(self, sess, action_dim, observation_dim):
+class Actor:
+    def __init__(self, sess, action_dim, observation_dim, learningRate):
         # setting our created session as default session
         self.sess = sess
         K.set_session(sess)
         self.action_dim = action_dim
         self.observation_dim = observation_dim
+        self.learningRate = learningRate
         self.state_input, self.output, self.model = self.create_model()
         model_weights = self.model.trainable_weights
         # Placeholder for critic gradients with respect to action_input.
@@ -33,7 +30,7 @@ class Actor(object):
         # Calulate and update the weights of the model to optimize the actor
         self.actor_grads = tf.gradients(neg_log_prob, model_weights, self.actor_critic_grads)
         grads = zip(self.actor_grads, model_weights)
-        self.optimize = tf.train.AdamOptimizer(0.001).apply_gradients(grads)
+        self.optimize = tf.train.AdamOptimizer(self.learningRate).apply_gradients(grads)
 
     def create_model(self):
         state_input = Input(shape=self.observation_dim)
@@ -42,20 +39,22 @@ class Actor(object):
         state_h3 = Dense(128, activation='relu')(state_h2)
         output = Dense(self.action_dim, activation='softmax')(state_h2)
         model = Model(inputs=state_input, outputs=output)
-        adam = Adam(lr=0.001)
+        adam = Adam(lr=self.learningRate)
         model.compile(loss='categorical_crossentropy', optimizer=adam)
         return state_input, output, model
 
     def train(self, critic_gradients_val, X_states):
+        #print self.action_dim, self.observation_dim
         self.sess.run(self.optimize, feed_dict={self.state_input:X_states, self.actor_critic_grads:critic_gradients_val})
 
-class Critic(object):
-    def __init__(self, sess, action_dim, observation_dim):
+class Critic:
+    def __init__(self, sess, action_dim, observation_dim, learningRate):
         # setting our created session as default session
         K.set_session(sess)
         self.sess = sess
         self.action_dim = action_dim
         self.observation_dim = observation_dim
+        self.learningRate = learningRate
         self.state_input, self.action_input, self.output, self.model = self.create_model()
         self.critic_gradients = tf.gradients(self.output, self.action_input)
 
@@ -70,7 +69,7 @@ class Critic(object):
         output = Dense(1, activation='linear')(state_action_h1)
 
         model = Model(inputs=[state_input, action_input], outputs=output)
-        model.compile(loss="mse", optimizer=Adam(lr=0.005))
+        model.compile(loss="mse", optimizer=Adam(lr=self.learningRate))
         return state_input, action_input, output, model
 
     def get_critic_gradients(self, X_states, X_actions):
@@ -79,24 +78,19 @@ class Critic(object):
         return critic_gradients_val[0]
 
 class ActorCritic:
-    def __init__(self, env, sess):
+    def __init__(self, env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, REPLAY_MEMORY_SIZE):
         # Environment details
         self.env = env
-        self.action_dim = env.action_space.shape[0]
-        self.observation_dim = env.observation_space.shape[0]
-        
-        # Actor model to take actions 
-        # state -> action
-        self.actor = Actor(sess, self.action_dim, self.observation_dim)
-        # Critic model to evaluate the action taken by the actor
-        # state + action -> Expected reward to be achieved by taking action in the state.
-        self.critic = Critic(sess, self.action_dim, self.observation_dim)
+        self.actor = actor
+        self.critic = critic
+        self.MINIBATCH_SIZE = MINIBATCH_SIZE
+        self.DISCOUNT = DISCOUNT_FACTOR
         
         # Replay memory to store experiences of the model with the environment
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
         
     def train(self):
-        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
+        minibatch = random.sample(self.replay_memory, self.MINIBATCH_SIZE)
 
         X_states = []
         X_actions = []
@@ -104,14 +98,10 @@ class ActorCritic:
         for sample in minibatch:
             cur_state, cur_action, reward, next_state, done = sample
             next_actions = self.actor.model.predict(np.expand_dims(next_state, axis=0))
-            if done:
-                # If episode ends means we have lost the game so we give -ve reward
-                # Q(st, at) = -reward
-                reward = -reward
-            else:
-                # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
-                next_reward = self.critic.model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
-                reward = reward + DISCOUNT * next_reward
+            
+            # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
+            next_reward = self.critic.model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
+            reward = reward + self.DISCOUNT * next_reward
 
             X_states.append(cur_state)
             X_actions.append(cur_action)
@@ -123,7 +113,7 @@ class ActorCritic:
         y = np.array(y)
         y = np.expand_dims(y, axis=1)
         # Train critic model
-        self.critic.model.fit(X, y, batch_size=MINIBATCH_SIZE, verbose = 0)
+        self.critic.model.fit(X, y, batch_size=self.MINIBATCH_SIZE, verbose = 0)
 
         # Get the actions for the cur_states from the minibatch.
         # We are doing this because now actor may have learnt more optimal actions for given states
@@ -139,7 +129,18 @@ class ActorCritic:
     
     def act(self, cur_state, epsilon):
         if np.random.random() < epsilon:
-            return self.env.action_space.sample()
-        return self.actor.predict(cur_state)
+            action = self.env.action_space.sample()
+            action = np.array(action, dtype=np.float32)
+            return action
+        return self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
+    
+    def saveModel(self, actor_path, critic_path):
+        self.actor.model.save(actor_path)
+        self.critic.model.save(critic_path)
+        
+    def loadWeights(self, actor_weights_path, critic_weights_path):
+        self.actor.model.set_weights(load_model(actor_weights_path).get_weights())
+        self.critic.model.set_weights(load_model(critic_weights_path).get_weights())
+        
 
 
