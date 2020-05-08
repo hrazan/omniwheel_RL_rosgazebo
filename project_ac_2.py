@@ -38,8 +38,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data_2/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data_2/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -167,7 +167,7 @@ if __name__ == '__main__':
                 json.dump(parameter_dictionary, outfile)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data_2/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward])
         csvRWRD.close()
