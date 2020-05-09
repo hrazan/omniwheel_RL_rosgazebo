@@ -66,7 +66,7 @@ class Critic:
         self.observation_dim = observation_dim
         self.learningRate = learningRate
         self.state_input, self.action_input, self.output, self.model = self.create_model(hiddenLayer)
-        _, _, self.target_model = self.create_model(hiddenLayer)
+        _, _, _, self.target_model = self.create_model(hiddenLayer)
         self.critic_gradients = tf.gradients(self.output, self.action_input)
 
     def create_model(self, hiddenLayer):
@@ -125,10 +125,18 @@ class ActorCritic:
         y = []
         for sample in minibatch:
             cur_state, cur_action, reward, next_state, done = sample
+            
+            next_actions = self.actor.target_model.predict(np.expand_dims(next_state, axis=0))
+            
+            # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
+            next_reward = self.critic.target_model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
+            
+            """
             next_actions = self.actor.model.predict(np.expand_dims(next_state, axis=0))
             
             # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
             next_reward = self.critic.model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
+            """
             reward = reward + self.DISCOUNT * next_reward
 
             X_states.append(cur_state)
@@ -173,17 +181,17 @@ class ActorCritic:
     def updateTarget(self):
         # Update Actor model
         actor_model_weights  = self.actor.model.get_weights()
-		actor_target_weights = self.actor.target_model.get_weights()
+        actor_target_weights = self.actor.target_model.get_weights()
 		
-		for i in range(len(actor_target_weights)):
-			actor_target_weights[i] = actor_model_weights[i]
-		self.actor.target_model.set_weights(actor_target_weights)
+        for i in range(len(actor_target_weights)):
+            actor_target_weights[i] = actor_model_weights[i]
+        self.actor.target_model.set_weights(actor_target_weights)
 		
 		# Update Critic model
         critic_model_weights  = self.critic.model.get_weights()
-		critic_target_weights = self.critic.target_model.get_weights()
+        critic_target_weights = self.critic.target_model.get_weights()
 		
-		for i in range(len(critic_target_weights)):
-			critic_target_weights[i] = critic_model_weights[i]
-		self.critic.target_model.set_weights(critic_target_weights)
+        for i in range(len(critic_target_weights)):
+            critic_target_weights[i] = critic_model_weights[i]
+        self.critic.target_model.set_weights(critic_target_weights)
 

@@ -14,12 +14,6 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import random
 
-"""
-# setting seed for reproducibility of results. This is not super important.
-random.seed(2212)
-np.random.seed(2212)
-tf.set_random_seed(2212)
-"""
 
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
@@ -63,14 +57,16 @@ if __name__ == '__main__':
         STEPS = 100
         UPDATE_NETWORK = 1000
         EPSILON = 1
-        EPSILON_DECAY = 0.999
-        MIN_EPSILON = 0.001
+        EPSILON_DECAY = 0.997
+        MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 64
         MINIMUM_REPLAY_MEMORY = 100
-        A_LEARNING_RATE = 0.001
-        C_LEARNING_RATE = 0.005
+        A_LEARNING_RATE = 0.00001
+        C_LEARNING_RATE = 0.00005
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 1000
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -89,6 +85,8 @@ if __name__ == '__main__':
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
             MEMORY_SIZE = d.get('MEMORY_SIZE')
+            A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
+            C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             
         clear_monitor_files(outdir)
@@ -97,10 +95,10 @@ if __name__ == '__main__':
     
     # Actor model to take actions 
     # state -> action
-    actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE)
+    actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE, A_HIDDEN_LAYER)
     # Critic model to evaluate the action taken by the actor
     # state + action -> Expected reward to be achieved by taking action in the state.
-    critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE)
+    critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
     sess.run(tf.initialize_all_variables())
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE)
@@ -135,16 +133,22 @@ if __name__ == '__main__':
             cur_state = next_state
             
             episode_step += 1
+            stepCounter += 1
 
-            if len(actor_critic.replay_memory) < MINIMUM_REPLAY_MEMORY:
-                continue
+            if len(actor_critic.replay_memory) >= MINIMUM_REPLAY_MEMORY:
+                actor_critic.train()
+            
+            if stepCounter%UPDATE_NETWORK == 0:
+                actor_critic.updateTarget()
 
-            actor_critic.train()
-
-            if EPSILON > MIN_EPSILON and len(actor_critic.replay_memory) >= MINIMUM_REPLAY_MEMORY:
-                EPSILON *= EPSILON_DECAY
-                EPSILON = max(EPSILON, MIN_EPSILON)
-
+        resetVel = False
+        while not resetVel:
+            try:
+                env.reset_vel()
+                resetVel = True
+            except:
+                pass
+        
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
@@ -152,7 +156,7 @@ if __name__ == '__main__':
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward:" + str(max_reward) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
-        if (episode)%100==0:
+        if (episode)%100==0:            
             #save model weights and monitoring data every 100 epochs.
             actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5')
             env._flush()
@@ -165,11 +169,18 @@ if __name__ == '__main__':
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
+            
+            # Show rewards graph
+            plotter.plot(env)
         
+        if EPSILON > MIN_EPSILON:
+            EPSILON *= EPSILON_DECAY
+            EPSILON = max(EPSILON, MIN_EPSILON)
+               
         # Save rewards
         with open('/home/katolab/experiment_data/AC_data_1/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
-            csvRWRD_writer.writerow([episode, episode_step, episode_reward])
+            csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
             
     input()
