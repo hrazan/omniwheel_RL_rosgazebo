@@ -45,8 +45,10 @@ class Actor:
         if len(state_h)>1:
             for layer in xrange(1, len(state_h), 1):
                 state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
-        output = Dense(self.action_dim, activation='softmax')(state_h[-1])
-        
+        output_1 = Dense(1, activation='sigmoid')(state_h[-1])
+        output_2 = Dense(2, activation='tanh')(state_h[-1])
+        output = Concatenate()([output_1, output_2])
+
         model = Model(inputs=state_input, outputs=output)
         adam = Adam(lr=self.learningRate)
         model.compile(loss='categorical_crossentropy', optimizer=adam)
@@ -130,13 +132,6 @@ class ActorCritic:
             
             # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
             next_reward = self.critic.target_model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
-            
-            """
-            next_actions = self.actor.model.predict(np.expand_dims(next_state, axis=0))
-            
-            # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
-            next_reward = self.critic.model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
-            """
             reward = reward + self.DISCOUNT * next_reward
 
             X_states.append(cur_state)
@@ -167,8 +162,13 @@ class ActorCritic:
         if np.random.random() < epsilon:
             action = self.env.action_space.sample()
             action = np.array(action, dtype=np.float32)
-            return action
-        return self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
+        else:
+            action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
+            for a in range(len(action)):
+                action[a] *= self.env.action_space.high[a]
+                #print self.env.action_space.high[a]
+        #print 'action: ', action
+        return action
     
     def saveModel(self, actor_path, critic_path):
         self.actor.model.save(actor_path)

@@ -62,7 +62,7 @@ if __name__ == '__main__':
         MINIBATCH_SIZE = 64
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
-        C_LEARNING_RATE = 0.00005
+        C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 1000
         A_HIDDEN_LAYER = [512,512,512]
