@@ -54,19 +54,19 @@ if __name__ == '__main__':
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
         EPISODES = 2000
-        STEPS = 100
+        STEPS = 50
         UPDATE_NETWORK = 1000
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.05
-        MINIBATCH_SIZE = 64
+        MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 1000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
+        MEMORY_SIZE = 1000000
+        A_HIDDEN_LAYER = [128,128,128] #[512,512,512]
+        C_HIDDEN_LAYER = [[128],[128,128]] #[[512],[512,512]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
