@@ -55,7 +55,7 @@ if __name__ == '__main__':
         #PARAMETER LIST
         EPISODES = 2000
         STEPS = 50
-        UPDATE_NETWORK = 1000
+        UPDATE_NETWORK = 500
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.05
@@ -64,9 +64,9 @@ if __name__ == '__main__':
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 1000000
-        A_HIDDEN_LAYER = [128,128,128] #[512,512,512]
-        C_HIDDEN_LAYER = [[128],[128,128]] #[[512],[512,512]] # [[befor merging],[after merging]]
+        MEMORY_SIZE = 10000
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -128,15 +128,16 @@ if __name__ == '__main__':
             episode_reward += reward
 
             # Add experience to replay memory
-            actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
+            #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
+            actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
             
             episode_step += 1
             stepCounter += 1
 
-            if len(actor_critic.replay_memory) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train()
+            if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
+                actor_critic.train('positive')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
@@ -165,8 +166,8 @@ if __name__ == '__main__':
             copy_tree(outdir,path+str(episode)+'_critic')
             
             #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'CURRENT_EPISODE']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, episode]
+            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE']
+            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode]
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)

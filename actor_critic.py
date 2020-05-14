@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from collections import deque
-import memory 
+import memory_ac as memory
 
 class Actor:
     def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
@@ -117,10 +117,12 @@ class ActorCritic:
         self.DISCOUNT = DISCOUNT_FACTOR
         
         # Replay memory to store experiences of the model with the environment
-        self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+        #self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+        self.replay_memory = memory.Memory(REPLAY_MEMORY_SIZE)
         
-    def train(self):
-        minibatch = random.sample(self.replay_memory, self.MINIBATCH_SIZE)
+    def train(self, mode):
+        #minibatch = random.sample(self.replay_memory, self.MINIBATCH_SIZE)
+        minibatch = self.replay_memory.getminiBatch(self.MINIBATCH_SIZE, mode)
 
         X_states = []
         X_actions = []
