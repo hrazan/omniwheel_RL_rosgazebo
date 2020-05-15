@@ -15,7 +15,7 @@ class Memory:
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':
-            memories = self.exp.nlargest(size, 'reward') #,keep='last')
+            memories = self.exp.nlargest(size, 'reward', keep='last')
         elif mode == 'random':
             memories = self.exp.sample(n=size)
         else:
@@ -26,8 +26,10 @@ class Memory:
     def addMemory(self, cur_state, action, reward, next_state, done) :
         # Delete a memory from DataFrame if the size is equal or bigger than the max size
         if len(self.exp.index) >= self.max_size:
-            index = random.randrange(self.max_size)
-            self.exp.drop([index])
+            #index = random.randrange(self.max_size)
+            self.exp = self.exp.drop([0])
+            self.exp = self.exp.reset_index()
+            self.exp = self.exp.drop(columns=['index'])
         # Add a new experience to memory DataFrame
         new_memory = pd.DataFrame([[cur_state, action, reward, next_state, done]], columns = ['cur_state', 'action', 'reward', 'next_state', 'done'])
         self.exp.append(new_memory, ignore_index=True)   

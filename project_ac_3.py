@@ -13,7 +13,7 @@ import csv
 import numpy as np
 import tensorflow.compat.v1 as tf
 import random
-import memory_ac as memory
+
 
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
@@ -32,8 +32,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data_3/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data_3/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '100' # change to epoch to continue from
+    resume_epoch = '1400' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -65,8 +65,8 @@ if __name__ == '__main__':
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 10000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
+        A_HIDDEN_LAYER = [128,128,128] #[512,512,512]
+        C_HIDDEN_LAYER = [[128],[128,128]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -118,7 +118,6 @@ if __name__ == '__main__':
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         cur_state = env.reset()
-        action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         
@@ -131,7 +130,6 @@ if __name__ == '__main__':
             # Add experience to replay memory
             #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
             actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
-            action_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
             
@@ -139,11 +137,11 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('positive')
+                actor_critic.train('random')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
-
+        
         resetVel = False
         while not resetVel:
             try:
@@ -155,14 +153,8 @@ if __name__ == '__main__':
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
-        if env.subgoal_as_dist_to_goal < min_distance:
-            min_distance = env.subgoal_as_dist_to_goal
-            action_memory.to_csv('/home/katolab/experiment_data/min_distance.csv')
-        if max_reward < episode_reward:
-            max_reward = episode_reward
-            action_memory.to_csv('/home/katolab/experiment_data/max_reward.csv')
-        #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
-        #max_reward = max(max_reward, episode_reward)
+        min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
+        max_reward = max(max_reward, episode_reward)
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
@@ -182,13 +174,13 @@ if __name__ == '__main__':
             
             # Show rewards graph
             plotter.plot(env)
-            
+        
         if EPSILON > MIN_EPSILON:
             EPSILON *= EPSILON_DECAY
             EPSILON = max(EPSILON, MIN_EPSILON)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data_3/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()

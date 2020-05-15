@@ -39,7 +39,7 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
     resume_epoch = '1400' # change to epoch to continue from
     resume_path = path + resume_epoch
@@ -65,15 +65,15 @@ if __name__ == '__main__':
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 10000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
+        A_HIDDEN_LAYER = [128,128,128] #[512,512,512]
+        C_HIDDEN_LAYER = [[128],[128,128]] #[[512],[512,512]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
         #Load weights, monitor info and parameter info.
         with open(params_json) as outfile:
             d = json.load(outfile)
-            EPISODES = 2000 #d.get('EPISODES')
+            EPISODES = d.get('EPISODES')
             STEPS = d.get('STEPS')
             UPDATE_NETWORK = d.get('UPDATE_NETWORK')
             EPSILON = d.get('EPSILON')
@@ -85,8 +85,8 @@ if __name__ == '__main__':
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
             MEMORY_SIZE = d.get('MEMORY_SIZE')
-            A_HIDDEN_LAYER = [512,512,512] #d.get('A_HIDDEN_LAYER')
-            C_HIDDEN_LAYER = [[512],[512,512]] #d.get('C_HIDDEN_LAYER')
+            A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
+            C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             
         clear_monitor_files(outdir)
