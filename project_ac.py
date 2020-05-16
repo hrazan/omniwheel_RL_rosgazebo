@@ -64,9 +64,9 @@ if __name__ == '__main__':
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 10000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
+        MEMORY_SIZE = 100000
+        A_HIDDEN_LAYER = [1024,1024,1024]
+        C_HIDDEN_LAYER = [[1024],[1024,1024]]  # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -139,7 +139,7 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('positive')
+                actor_critic.train('random')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
@@ -157,10 +157,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.to_csv('/home/katolab/experiment_data/min_distance.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.to_csv('/home/katolab/experiment_data/max_reward.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/max_reward.csv')
         #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
         #max_reward = max(max_reward, episode_reward)
         

@@ -13,6 +13,7 @@ import csv
 import numpy as np
 import tensorflow.compat.v1 as tf
 import random
+import memory_ac as memory
 
 
 def detect_monitor_files(training_dir):
@@ -64,9 +65,9 @@ if __name__ == '__main__':
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 10000
-        A_HIDDEN_LAYER = [128,128,128] #[512,512,512]
-        C_HIDDEN_LAYER = [[128],[128,128]] #[[512],[512,512]] # [[befor merging],[after merging]]
+        MEMORY_SIZE = 100000
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[512],[512,512]] # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -118,6 +119,7 @@ if __name__ == '__main__':
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         cur_state = env.reset()
+        action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         
@@ -130,6 +132,7 @@ if __name__ == '__main__':
             # Add experience to replay memory
             #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
             actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
+            action_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
             
@@ -141,7 +144,7 @@ if __name__ == '__main__':
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
-        
+
         resetVel = False
         while not resetVel:
             try:
@@ -153,8 +156,14 @@ if __name__ == '__main__':
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
-        min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
-        max_reward = max(max_reward, episode_reward)
+        if env.subgoal_as_dist_to_goal < min_distance:
+            min_distance = env.subgoal_as_dist_to_goal
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/min_distance.csv')
+        if max_reward < episode_reward:
+            max_reward = episode_reward
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/max_reward.csv')
+        #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
+        #max_reward = max(max_reward, episode_reward)
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         

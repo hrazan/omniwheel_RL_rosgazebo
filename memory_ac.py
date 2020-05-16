@@ -21,7 +21,7 @@ class Memory:
         else:
             print "Error! Enter mode: 'positive' or 'random'"
         memories = memories.values.tolist()
-        return 
+        return memories
 
     def addMemory(self, cur_state, action, reward, next_state, done) :
         # Delete a memory from DataFrame if the size is equal or bigger than the max size
@@ -32,4 +32,4 @@ class Memory:
             self.exp = self.exp.drop(columns=['index'])
         # Add a new experience to memory DataFrame
         new_memory = pd.DataFrame([[cur_state, action, reward, next_state, done]], columns = ['cur_state', 'action', 'reward', 'next_state', 'done'])
-        self.exp.append(new_memory, ignore_index=True)   
+        self.exp = self.exp.append(new_memory, ignore_index=True)   

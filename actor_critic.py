@@ -122,7 +122,7 @@ class ActorCritic:
         
     def train(self, mode):
         #minibatch = random.sample(self.replay_memory, self.MINIBATCH_SIZE)
-        minibatch = self.replay_memory.getminiBatch(self.MINIBATCH_SIZE, mode)
+        minibatch = self.replay_memory.getMiniBatch(self.MINIBATCH_SIZE, mode)
 
         X_states = []
         X_actions = []
