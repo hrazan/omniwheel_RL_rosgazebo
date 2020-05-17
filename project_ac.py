@@ -57,7 +57,7 @@ if __name__ == '__main__':
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.997
+        EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
@@ -65,8 +65,8 @@ if __name__ == '__main__':
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
-        A_HIDDEN_LAYER = [1024,1024,1024]
-        C_HIDDEN_LAYER = [[1024],[1024,1024]]  # [[befor merging],[after merging]]
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[512],[512,512]]   # [[befor merging],[after merging]]
         CURRENT_EPISODE = 0
 
     else:

@@ -58,7 +58,7 @@ if __name__ == '__main__':
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.997
+        EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100

@@ -54,11 +54,11 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 3000
+        EPISODES = 2000
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.9
+        EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
@@ -181,12 +181,12 @@ if __name__ == '__main__':
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
         
-            if EPSILON > MIN_EPSILON:
-                EPSILON *= EPSILON_DECAY
-                EPSILON = max(EPSILON, MIN_EPSILON)
-            
             # Show rewards graph
             plotter.plot(env)
+        
+        if EPSILON > MIN_EPSILON:
+            EPSILON *= EPSILON_DECAY
+            EPSILON = max(EPSILON, MIN_EPSILON)
                
         # Save rewards
         with open('/home/katolab/experiment_data/AC_data_1/reward_ac.csv','a+') as csvRWRD:
