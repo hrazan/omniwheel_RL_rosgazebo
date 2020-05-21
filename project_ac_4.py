@@ -15,6 +15,7 @@ import tensorflow.compat.v1 as tf
 import random
 import memory_ac as memory
 
+
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
 
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data_4/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data_4/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -41,7 +42,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '100' # change to epoch to continue from
+    resume_epoch = '1400' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -59,8 +60,8 @@ if __name__ == '__main__':
         EPSILON = 1
         EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
-        MINIBATCH_SIZE = 100
-        MINIMUM_REPLAY_MEMORY = 100
+        MINIBATCH_SIZE = 128
+        MINIMUM_REPLAY_MEMORY = 128
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
@@ -139,7 +140,7 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('positive')
+                actor_critic.train('random')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
@@ -157,10 +158,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/min_distance.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/max_reward.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/max_reward.csv')
         #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
         #max_reward = max(max_reward, episode_reward)
         
@@ -182,13 +183,13 @@ if __name__ == '__main__':
             
             # Show rewards graph
             plotter.plot(env)
-            
+        
         if EPSILON > MIN_EPSILON:
             EPSILON *= EPSILON_DECAY
             EPSILON = max(EPSILON, MIN_EPSILON)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data_4/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()

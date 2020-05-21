@@ -73,30 +73,43 @@ class Critic:
 
     def create_model(self, hiddenLayer):
         state_h = hiddenLayer[0][:]
-        merge_h = hiddenLayer[1][:]
+        action_h = hiddenLayer[1][:]
+        merge_h = hiddenLayer[2][:]
         
         # Before merging with action
+        # Critic's Hidden Layers
         state_input = Input(shape=self.observation_dim)
         try:
             state_h[0] = Dense(state_h[0], activation='relu')(state_input)
+            if len(state_h)>1:
+                for layer in xrange(1, len(state_h), 1):
+                    state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
         except ValueError:
             print "Error: insert at least one hidden layer of Critic's model"
-        if len(state_h)>1:
-            for layer in xrange(1, len(state_h), 1):
-                state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
+        input_merge = Dense(merge_h[0], activation='relu')(state_h[-1])
         
-        # After merging with action
+        # Actor's Hidden Layers
         action_input = Input(shape=(self.action_dim,))
-        merge_layer = Concatenate()([state_h[-1], action_input])
         try:
-            merge_h[0] = Dense(merge_h[0], activation='relu')(merge_layer)
+            action_h[0] = Dense(merge_h[0], activation='relu')(action_input)
+            if len(merge_h)>1:
+                for layer in xrange(1, len(action_h), 1):
+                    action_h[layer] = Dense(action_h[layer], activation='relu')(action_h[layer-1])
+            action_merge = Dense(merge_h[0], activation='relu')(action_h[-1])
+        except:
+            action_merge = Dense(merge_h[0], activation='relu')(action_input)
+        
+        # After merging with action        
+        #merge_layer = Add()([input_merge, action_merge])
+        try:
+            merge_h[0] = Add()([input_merge, action_merge])
+            if len(merge_h)>1:
+                for layer in xrange(1, len(merge_h), 1):
+                    merge_h[layer] = Dense(merge_h[layer], activation='relu')(merge_h[layer-1])
         except ValueError:
             print "Error: insert at least one hidden layer of Critic's model"
-        if len(merge_h)>1:
-            for layer in xrange(1, len(merge_h), 1):
-                merge_h[layer] = Dense(merge_h[layer], activation='relu')(merge_h[layer-1])
         output = Dense(1, activation='linear')(merge_h[-1])
-        
+                
         model = Model(inputs=[state_input, action_input], outputs=output)
         model.compile(loss="mse", optimizer=Adam(lr=self.learningRate))
         model.summary()
@@ -161,16 +174,21 @@ class ActorCritic:
         self.actor.train(critic_gradients_val, X_states)
     
     def act(self, cur_state, epsilon):
+        action = [] # array of action for learning [-1,1] or [0,1]
+        action_step = [] # array of action for environment [min, max]
         if np.random.random() < epsilon:
-            action = self.env.action_space.sample()
+            action_step = self.env.action_space.sample()
+            action_step = np.array(action_step, dtype=np.float32)
+            for a in range(len(action_step)):
+                action += [action_step[a]*(1/self.env.action_space.high[a])]
             action = np.array(action, dtype=np.float32)
         else:
             action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
             for a in range(len(action)):
-                action[a] *= self.env.action_space.high[a]
+                action_step += [action[a]*self.env.action_space.high[a]]
                 #print self.env.action_space.high[a]
         #print 'action: ', action
-        return action
+        return action, action_step
     
     def saveModel(self, actor_path, critic_path):
         self.actor.model.save(actor_path)

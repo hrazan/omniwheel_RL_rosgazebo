@@ -60,14 +60,14 @@ if __name__ == '__main__':
         EPSILON = 1
         EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
-        MINIBATCH_SIZE = 100
-        MINIMUM_REPLAY_MEMORY = 100
+        MINIBATCH_SIZE = 128
+        MINIMUM_REPLAY_MEMORY = 128
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
         A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[512,512]]  # [[befor merging],[after merging]]
+        C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
 
     else:
@@ -124,8 +124,8 @@ if __name__ == '__main__':
         episode_step = 0
         
         while not done:
-            action = actor_critic.act(cur_state, EPSILON)
-            next_state, reward, done, _ = env.step(action)
+            action, action_step = actor_critic.act(cur_state, EPSILON)
+            next_state, reward, done, _ = env.step(action_step)
 
             episode_reward += reward
 
