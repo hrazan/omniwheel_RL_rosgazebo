@@ -58,7 +58,7 @@ if __name__ == '__main__':
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.999
+        EPSILON_DECAY = 0.9985
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
@@ -140,7 +140,7 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('positive')
+                actor_critic.train('random')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()

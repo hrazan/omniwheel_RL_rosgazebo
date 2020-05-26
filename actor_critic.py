@@ -46,7 +46,8 @@ class Actor:
             for layer in xrange(1, len(state_h), 1):
                 state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
         output_1 = Dense(1, activation='sigmoid')(state_h[-1])
-        output_2 = Dense(2, activation='tanh')(state_h[-1])
+        #output_2 = Dense(2, activation='tanh')(state_h[-1])
+        output_2 = Dense(1, activation='tanh')(state_h[-1])
         output = Concatenate()([output_1, output_2])
 
         model = Model(inputs=state_input, outputs=output)
