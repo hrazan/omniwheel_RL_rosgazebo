@@ -15,7 +15,18 @@ class Memory:
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':
-            memories = self.exp.nlargest(size, 'reward', keep='last')
+            positive_memories = self.exp.nlargest(1000, 'reward', keep='last')
+            memories_1 = positive_memories.sample(n=int(size/2))
+            memories_2 = self.exp.sample(n=(size - int(size/2)))
+            memories = pd.concat([memories_1,memories_2])
+        elif mode=='pos_neg':
+            positive_memories = self.exp.nlargest(1000, 'reward', keep='last')
+            negative_memories = self.exp.nsmallest(1000, 'reward', keep='last')
+            memories_1 = positive_memories.sample(n=int(size/3))
+            memories_2 = negative_memories.sample(n=int(size/3))
+            memories_3 = pd.concat([memories_1,memories_2])
+            memories_4 = self.exp.sample(n=(size - (2*int(size/3))))
+            memories = pd.concat([memories_3,memories_4])
         elif mode == 'random':
             memories = self.exp.sample(n=size)
         else:
