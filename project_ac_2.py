@@ -188,6 +188,8 @@ if __name__ == '__main__':
             EPSILON *= EPSILON_DECAY
             EPSILON = max(EPSILON, MIN_EPSILON)
         
+        #actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/experience.csv')
+        
         # Save rewards
         with open('/home/katolab/experiment_data/AC_data_2/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
