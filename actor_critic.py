@@ -45,12 +45,9 @@ class Actor:
         if len(state_h)>1:
             for layer in xrange(1, len(state_h), 1):
                 state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
-        """        
         output_1 = Dense(1, activation='sigmoid')(state_h[-1])
         output_2 = Dense(2, activation='tanh')(state_h[-1])
         output = Concatenate()([output_1, output_2])
-        """
-        output = Dense(3, activation='sigmoid')(state_h[-1])
 
         model = Model(inputs=state_input, outputs=output)
         adam = Adam(lr=self.learningRate)
@@ -183,12 +180,12 @@ class ActorCritic:
             action_step = self.env.action_space.sample()
             action_step = np.array(action_step, dtype=np.float32)
             for a in range(len(action_step)):
-                action += [(action_step[a] + self.env.action_space.high[a])/(2*self.env.action_space.high[a])]
+                action += [action_step[a]*(1/self.env.action_space.high[a])]
             action = np.array(action, dtype=np.float32)
         else:
             action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
             for a in range(len(action)):
-                action_step += [(action[a]*2*self.env.action_space.high[a]) - self.env.action_space.high[a]]
+                action_step += [action[a]*self.env.action_space.high[a]]
                 #print self.env.action_space.high[a]
         #print 'action: ', action
         return action, action_step
@@ -217,4 +214,5 @@ class ActorCritic:
         for i in range(len(critic_target_weights)):
             critic_target_weights[i] = critic_model_weights[i]
         self.critic.target_model.set_weights(critic_target_weights)
+
 
