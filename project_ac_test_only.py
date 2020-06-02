@@ -15,7 +15,6 @@ import tensorflow.compat.v1 as tf
 import random
 import memory_ac as memory
 
-
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
 
@@ -33,8 +32,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    outdir = '/home/katolab/experiment_data/AC_data_2/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data_2/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -42,7 +41,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '1200' # change to epoch to continue from
+    resume_epoch = '100' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -58,7 +57,7 @@ if __name__ == '__main__':
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.9985
+        EPSILON_DECAY = 1
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
@@ -131,8 +130,8 @@ if __name__ == '__main__':
 
             # Add experience to replay memory
             #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
-            actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
-            action_memory.addMemory(cur_state, action, reward, next_state, done)
+            #actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
+            #action_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
             
@@ -156,17 +155,19 @@ if __name__ == '__main__':
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
+        """
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/min_distance.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/max_reward.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/max_reward.csv')
         #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
         #max_reward = max(max_reward, episode_reward)
-        
+        """
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
+        """
         if (episode)%100==0:            
             #save model weights and monitoring data every 100 epochs.
             actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5')
@@ -183,16 +184,18 @@ if __name__ == '__main__':
             
             # Show rewards graph
             plotter.plot(env)
-        
+            
         if EPSILON > MIN_EPSILON:
             EPSILON *= EPSILON_DECAY
             EPSILON = max(EPSILON, MIN_EPSILON)
-                
+        
+        actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/experience.csv')
+        
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data_2/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
-            
+        """    
     input()
     env.close()

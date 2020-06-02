@@ -40,7 +40,7 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
     resume_epoch = '400' # change to epoch to continue from
     resume_path = path + resume_epoch
@@ -122,12 +122,17 @@ if __name__ == '__main__':
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
+        act = []
+        act_step = []
         
         while not done:
             action, action_step = actor_critic.act(cur_state, EPSILON)
             next_state, reward, done, _ = env.step(action_step)
 
             episode_reward += reward
+            
+            act += [action]
+            act_step += [action_step]
 
             # Add experience to replay memory
             #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
@@ -162,6 +167,12 @@ if __name__ == '__main__':
         if max_reward < episode_reward:
             max_reward = episode_reward
             action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_1/max_reward.csv')
+            # Make csv file of best actions' detail
+            csvOpen = open('/home/katolab/experiment_data/AC_data_1/actions_details.csv','w')
+            writer = csv.writer(csvOpen, dialect='excel')
+            for act_num in range(len(act)):
+                writer.writerow([act[act_num], act_step[act_num]])
+            csvOpen.close()
         #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
         #max_reward = max(max_reward, episode_reward)
         
