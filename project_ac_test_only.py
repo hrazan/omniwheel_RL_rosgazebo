@@ -32,8 +32,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data_test/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data_test/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -128,10 +128,7 @@ if __name__ == '__main__':
 
             episode_reward += reward
 
-            # Add experience to replay memory
-            #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
-            #actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
-            #action_memory.addMemory(cur_state, action, reward, next_state, done)
+            action_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
             
@@ -155,47 +152,27 @@ if __name__ == '__main__':
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
-        """
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
             action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
             action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/max_reward.csv')
-        #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
-        #max_reward = max(max_reward, episode_reward)
-        """
+        
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
-        """
-        if (episode)%100==0:            
-            #save model weights and monitoring data every 100 epochs.
-            actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5')
+        if (episode)%100==0:
             env._flush()
-            copy_tree(outdir,path+str(episode)+'_actor')
-            copy_tree(outdir,path+str(episode)+'_critic')
-            
-            #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode]
-            parameter_dictionary = dict(zip(parameter_keys, parameter_values))
-            with open(path+str(episode)+'.json', 'w') as outfile:
-                json.dump(parameter_dictionary, outfile)
             
             # Show rewards graph
             plotter.plot(env)
-            
-        if EPSILON > MIN_EPSILON:
-            EPSILON *= EPSILON_DECAY
-            EPSILON = max(EPSILON, MIN_EPSILON)
-        
-        actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/experience.csv')
+            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/experience.csv')
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data_test/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
-        """    
+        
     input()
     env.close()

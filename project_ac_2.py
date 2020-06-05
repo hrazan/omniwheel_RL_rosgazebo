@@ -40,9 +40,9 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = False
+    continue_execution = True
     #fill this if continue_execution=True
-    resume_epoch = '1200' # change to epoch to continue from
+    resume_epoch = '700' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -54,18 +54,18 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 2000
+        EPISODES = 1000
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.9985
+        EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 100000
+        MEMORY_SIZE = 50000
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0

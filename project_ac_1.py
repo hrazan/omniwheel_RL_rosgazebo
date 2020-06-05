@@ -54,18 +54,18 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 2000
+        EPISODES = 1000
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 0.9985
+        EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.05
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 100000
+        MEMORY_SIZE = 50000
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0

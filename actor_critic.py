@@ -18,18 +18,16 @@ class Actor:
         self.action_dim = action_dim
         self.observation_dim = observation_dim
         self.learningRate = learningRate
-        self.state_input, self.output, self.model = self.create_model(hiddenLayer)
-        _, _, self.target_model = self.create_model(hiddenLayer)
-        model_weights = self.model.trainable_weights
+        
+        self.state_input, self.model = self.create_model(hiddenLayer)
+        _, self.target_model = self.create_model(hiddenLayer)
+        
         # Placeholder for critic gradients with respect to action_input.
-        self.actor_critic_grads = tf.placeholder(tf.float32, [None, action_dim])
-        # Adding small number inside log to avoid log(0) = -infinity
-        log_prob = tf.math.log(self.output + 10e-10)
-        # Multiply log by -1 to convert the optimization problem as minimization problem.
-        # This step is essential because apply_gradients always do minimization.
-        neg_log_prob = tf.multiply(log_prob, -1)
+        self.actor_critic_grads = tf.placeholder(tf.float32, [None, action_dim]) # where we will feed de/dC (from critic)
+        
+        model_weights = self.model.trainable_weights
         # Calulate and update the weights of the model to optimize the actor
-        self.actor_grads = tf.gradients(neg_log_prob, model_weights, self.actor_critic_grads)
+        self.actor_grads = tf.gradients(self.model.output, model_weights, -self.actor_critic_grads)
         grads = zip(self.actor_grads, model_weights)
         self.optimize = tf.train.AdamOptimizer(self.learningRate).apply_gradients(grads)
 
@@ -45,19 +43,32 @@ class Actor:
         if len(state_h)>1:
             for layer in xrange(1, len(state_h), 1):
                 state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
-        output_1 = Dense(1, activation='sigmoid')(state_h[-1])
-        output_2 = Dense(2, activation='tanh')(state_h[-1])
-        output = Concatenate()([output_1, output_2])
-
+        output = Dense(3, activation='tanh')(state_h[-1])
+        
         model = Model(inputs=state_input, outputs=output)
         adam = Adam(lr=self.learningRate)
-        model.compile(loss='categorical_crossentropy', optimizer=adam)
+        model.compile(loss="mse", optimizer=adam)
         model.summary()
-        return state_input, output, model
+        return state_input, model
 
-    def train(self, critic_gradients_val, X_states):
-        #print self.action_dim, self.observation_dim
-        self.sess.run(self.optimize, feed_dict={self.state_input:X_states, self.actor_critic_grads:critic_gradients_val})
+    def train(self, samples, critic, env):
+        for sample in samples:
+            cur_state, action, reward, new_state, _ = sample
+            
+            cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
+            action = action.reshape((1, env.action_space.shape[0]))
+            new_state = new_state.reshape((1, env.observation_space.shape[0]))
+            
+            predicted_action = self.model.predict(cur_state)
+            grads = self.sess.run(critic.critic_grads, feed_dict={
+				critic.state_input:  cur_state,
+				critic.action_input: predicted_action
+			})[0]
+
+            self.sess.run(self.optimize, feed_dict={
+                self.state_input: cur_state,
+                self.actor_critic_grads: grads
+            })
 
 class Critic:
     def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
@@ -67,9 +78,13 @@ class Critic:
         self.action_dim = action_dim
         self.observation_dim = observation_dim
         self.learningRate = learningRate
-        self.state_input, self.action_input, self.output, self.model = self.create_model(hiddenLayer)
-        _, _, _, self.target_model = self.create_model(hiddenLayer)
-        self.critic_gradients = tf.gradients(self.output, self.action_input)
+        
+        self.state_input, self.action_input, self.model = self.create_model(hiddenLayer)
+        _, _, self.target_model = self.create_model(hiddenLayer)
+        self.critic_grads = tf.gradients(self.model.output, self.action_input) # where we calcaulte de/dC for feeding above
+        
+        # Initialize for later gradient calculations
+        self.sess.run(tf.initialize_all_variables())
 
     def create_model(self, hiddenLayer):
         state_h = hiddenLayer[0][:]
@@ -100,7 +115,7 @@ class Critic:
             action_merge = Dense(merge_h[0], activation='relu')(action_input)
         
         # After merging with action        
-        #merge_layer = Add()([input_merge, action_merge])
+        # merge_layer = Add()([input_merge, action_merge])
         try:
             merge_h[0] = Add()([input_merge, action_merge])
             if len(merge_h)>1:
@@ -113,12 +128,30 @@ class Critic:
         model = Model(inputs=[state_input, action_input], outputs=output)
         model.compile(loss="mse", optimizer=Adam(lr=self.learningRate))
         model.summary()
-        return state_input, action_input, output, model
+        return state_input, action_input, model
 
-    def get_critic_gradients(self, X_states, X_actions):
-        # critic gradients with respect to action_input to feed in the weight updation of actor
-        critic_gradients_val = self.sess.run(self.critic_gradients, feed_dict={self.state_input:X_states, self.action_input:X_actions})
-        return critic_gradients_val[0]
+    def train(self, samples, actor, gamma, batch_size):
+        X_states = []
+        X_actions = []
+        y = []
+        for sample in samples:
+            cur_state, action, reward, new_state, done = sample
+            
+            target_action = actor.target_model.predict(np.expand_dims(new_state, axis=0))
+            future_reward = self.target_model.predict([np.expand_dims(new_state, axis=0), target_action])[0][0]
+            reward += gamma * future_reward
+			
+            X_states.append(cur_state)
+            X_actions.append(action)
+            y.append(reward)
+
+        X_states = np.array(X_states)
+        X_actions = np.array(X_actions)
+        X = [X_states, X_actions]
+        y = np.array(y)
+        y = np.expand_dims(y, axis=1)
+        # Train critic model
+        self.model.fit(X, y, batch_size=batch_size, verbose = 0)
 
 class ActorCritic:
     def __init__(self, env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, REPLAY_MEMORY_SIZE):
@@ -130,48 +163,13 @@ class ActorCritic:
         self.DISCOUNT = DISCOUNT_FACTOR
         
         # Replay memory to store experiences of the model with the environment
-        #self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
+        # self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
         self.replay_memory = memory.Memory(REPLAY_MEMORY_SIZE)
         
     def train(self, mode):
-        #minibatch = random.sample(self.replay_memory, self.MINIBATCH_SIZE)
         minibatch = self.replay_memory.getMiniBatch(self.MINIBATCH_SIZE, mode)
-
-        X_states = []
-        X_actions = []
-        y = []
-        for sample in minibatch:
-            cur_state, cur_action, reward, next_state, done = sample
-            
-            next_actions = self.actor.target_model.predict(np.expand_dims(next_state, axis=0))
-            
-            # Q(st, at) = reward + DISCOUNT * Q(s(t+1), a(t+1))
-            next_reward = self.critic.target_model.predict([np.expand_dims(next_state, axis=0), next_actions])[0][0]
-            reward = reward + self.DISCOUNT * next_reward
-
-            X_states.append(cur_state)
-            X_actions.append(cur_action)
-            y.append(reward)
-
-        X_states = np.array(X_states)
-        X_actions = np.array(X_actions)
-        X = [X_states, X_actions]
-        y = np.array(y)
-        y = np.expand_dims(y, axis=1)
-        # Train critic model
-        self.critic.model.fit(X, y, batch_size=self.MINIBATCH_SIZE, verbose = 0)
-
-        # Get the actions for the cur_states from the minibatch.
-        # We are doing this because now actor may have learnt more optimal actions for given states
-        # as Actor is constantly learning and we are picking the states from the previous experiences.
-        X_actions_new = []
-        for sample in minibatch:
-            X_actions_new.append(self.actor.model.predict(np.expand_dims(sample[0], axis=0))[0])
-        X_actions_new = np.array(X_actions_new)
-
-        # grad(J(actor_weights)) = sum[ grad(log(pi(at | st, actor_weights)) * grad(critic_output, action_input), actor_weights) ]
-        critic_gradients_val = self.critic.get_critic_gradients(X_states, X_actions)
-        self.actor.train(critic_gradients_val, X_states)
+        self.critic.train(minibatch, self.actor, self.DISCOUNT, self.MINIBATCH_SIZE)
+        self.actor.train(minibatch, self.critic, self.env)     
     
     def act(self, cur_state, epsilon):
         action = [] # array of action for learning [-1,1] or [0,1]
@@ -215,4 +213,4 @@ class ActorCritic:
             critic_target_weights[i] = critic_model_weights[i]
         self.critic.target_model.set_weights(critic_target_weights)
 
-
+        print "Network Upadated!"
