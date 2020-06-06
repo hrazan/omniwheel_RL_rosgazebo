@@ -154,17 +154,21 @@ class Critic:
         self.model.fit(X, y, batch_size=batch_size, verbose = 0)
 
 class ActorCritic:
-    def __init__(self, env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, REPLAY_MEMORY_SIZE):
+    def __init__(self, env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, REPLAY_MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES):
         # Environment details
         self.env = env
         self.actor = actor
         self.critic = critic
         self.MINIBATCH_SIZE = MINIBATCH_SIZE
         self.DISCOUNT = DISCOUNT_FACTOR
+        self.TARGET_DISCOUNT = TARGET_DISCOUNT
         
         # Replay memory to store experiences of the model with the environment
         # self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-        self.replay_memory = memory.Memory(REPLAY_MEMORY_SIZE)
+        if continue_execution:
+            self.replay_memory = memory.Memory(REPLAY_MEMORY_SIZE, load=continue_execution, memories=MEMORIES)
+        else:
+            self.replay_memory = memory.Memory(REPLAY_MEMORY_SIZE)
         
     def train(self, mode):
         minibatch = self.replay_memory.getMiniBatch(self.MINIBATCH_SIZE, mode)
@@ -202,7 +206,7 @@ class ActorCritic:
         actor_target_weights = self.actor.target_model.get_weights()
 		
         for i in range(len(actor_target_weights)):
-            actor_target_weights[i] = actor_model_weights[i]
+            actor_target_weights[i] = self.TARGET_DISCOUNT*actor_model_weights[i] + (1-self.TARGET_DISCOUNT)*actor_target_weights[i]
         self.actor.target_model.set_weights(actor_target_weights)
 		
 		# Update Critic model
@@ -210,7 +214,7 @@ class ActorCritic:
         critic_target_weights = self.critic.target_model.get_weights()
 		
         for i in range(len(critic_target_weights)):
-            critic_target_weights[i] = critic_model_weights[i]
+            critic_target_weights[i] = self.TARGET_DISCOUNT*critic_model_weights[i] + (1-self.TARGET_DISCOUNT)*critic_target_weights[i]
         self.critic.target_model.set_weights(critic_target_weights)
 
         print "Network Upadated!"

@@ -9,9 +9,12 @@ class Memory:
     that get returned as another list of dictionaries with each key corresponding to either 
     'cur_state', 'action', 'reward', 'next_state', 'done' or "isFinal".
     """
-    def __init__(self, max_size):
+    def __init__(self, max_size, load=False, memories=None):
         self.max_size = max_size
-        self.exp = pd.DataFrame(columns = ['cur_state', 'action', 'reward', 'next_state', 'done'], dtype = np.float32)
+        if load == False:
+            self.exp = pd.DataFrame(columns = ['cur_state', 'action', 'reward', 'next_state', 'done'], dtype = np.float32)
+        else:
+            self.exp = memories
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':

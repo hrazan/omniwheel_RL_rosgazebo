@@ -15,7 +15,6 @@ import tensorflow.compat.v1 as tf
 import random
 import memory_ac as memory
 
-
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
 
@@ -42,7 +41,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '1400' # change to epoch to continue from
+    resume_epoch = '100' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -69,6 +68,8 @@ if __name__ == '__main__':
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
+        TARGET_DISCOUNT = 0.7
+        MEMORIES = None
 
     else:
         #Load weights, monitor info and parameter info.
@@ -89,6 +90,8 @@ if __name__ == '__main__':
             A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
+            TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
+            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_3/experience.csv')
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)
@@ -102,7 +105,7 @@ if __name__ == '__main__':
     critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
     sess.run(tf.initialize_all_variables())
-    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE)
+    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
     
     if continue_execution : actor_critic.loadWeights(actor_weights_path, critic_weights_path)
     
@@ -130,7 +133,6 @@ if __name__ == '__main__':
             episode_reward += reward
 
             # Add experience to replay memory
-            #actor_critic.replay_memory.append((cur_state, action, reward, next_state, done))
             actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
             action_memory.addMemory(cur_state, action, reward, next_state, done)
 
@@ -162,8 +164,6 @@ if __name__ == '__main__':
         if max_reward < episode_reward:
             max_reward = episode_reward
             action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_3/max_reward.csv')
-        #min_distance = min(min_distance, env.subgoal_as_dist_to_goal)
-        #max_reward = max(max_reward, episode_reward)
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
@@ -175,15 +175,18 @@ if __name__ == '__main__':
             copy_tree(outdir,path+str(episode)+'_critic')
             
             #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode]
+            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
+            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
             
+            #save experiences data
+            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_3/experience.csv')
+            
             # Show rewards graph
             plotter.plot(env)
-        
+            
         if EPSILON > MIN_EPSILON:
             EPSILON *= EPSILON_DECAY
             EPSILON = max(EPSILON, MIN_EPSILON)
