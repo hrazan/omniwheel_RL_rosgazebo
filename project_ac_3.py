@@ -14,6 +14,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import random
 import memory_ac as memory
+import pandas as pd
 
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
@@ -58,7 +59,7 @@ if __name__ == '__main__':
         UPDATE_NETWORK = 500
         EPSILON = 1
         EPSILON_DECAY = 0.997
-        MIN_EPSILON = 0.05
+        MIN_EPSILON = 0.2
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
@@ -68,7 +69,7 @@ if __name__ == '__main__':
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
-        TARGET_DISCOUNT = 0.7
+        TARGET_DISCOUNT = 1 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
 
     else:
@@ -91,7 +92,7 @@ if __name__ == '__main__':
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
-            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_3/experience.csv')
+            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_test/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)

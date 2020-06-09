@@ -11,10 +11,47 @@ class Memory:
     """
     def __init__(self, max_size, load=False, memories=None):
         self.max_size = max_size
+        #self.exp = pd.DataFrame(columns = ['cur_state', 'action', 'reward', 'next_state', 'done'], dtype = np.float32)
         if load == False:
             self.exp = pd.DataFrame(columns = ['cur_state', 'action', 'reward', 'next_state', 'done'], dtype = np.float32)
         else:
             self.exp = memories
+            self.exp = self.exp.reset_index()
+            self.exp = self.exp.drop(columns=['index'])
+            
+            # String to array of float
+            for x in range(len(self.exp.index)):
+                cur_state_raw = self.exp.at[x,'cur_state'][2:-1].split(' ')
+                cur_state = []
+                for y in range(len(cur_state_raw)):
+                    if cur_state_raw[y] != '':
+                        try:
+                            cur_state.append(float(cur_state_raw[y]))
+                        except:
+                            cur_state.append((0.1**int(cur_state_raw[y][-1]))*float(cur_state_raw[y][0:-5]))
+                self.exp.at[x,'cur_state'] = np.asarray(tuple(cur_state))
+                
+                next_state_raw = self.exp.at[x,'next_state'][2:-1].split(' ')
+                next_state = []
+                for y in range(len(next_state_raw)):
+                    if next_state_raw[y] != '':
+                        try:
+                            next_state.append(float(next_state_raw[y]))
+                        except:
+                            next_state.append((0.1**int(next_state_raw[y][-1]))*float(next_state_raw[y][0:-5]))
+                self.exp.at[x,'next_state'] = np.asarray(tuple(next_state))
+                
+                action_raw = self.exp.at[x,'action'][1:-2].split(' ')
+                action = []
+                for y in range(len(action_raw)):
+                    if action_raw[y] != '':
+                        try:
+                            action.append(float(action_raw[y]))
+                        except:
+                            action.append((0.1**int(action_raw[y][-1]))*float(action_raw[y][0:-5]))
+                self.exp.at[x,'action'] = np.array(action, dtype=np.float32)
+                
+            #print self.exp.at[0,'cur_state'], self.exp.at[0,'next_state'], self.exp.at[0,'action']
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':
@@ -35,6 +72,7 @@ class Memory:
         else:
             print "Error! Enter mode: 'positive' or 'random'"
         memories = memories.values.tolist()
+        #print memories
         return memories
 
     def addMemory(self, cur_state, action, reward, next_state, done) :

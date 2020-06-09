@@ -135,8 +135,15 @@ class Critic:
         X_actions = []
         y = []
         for sample in samples:
+            #print sample
             cur_state, action, reward, new_state, done = sample
-            
+            """
+            print "cur_state: ", cur_state
+            print "action: ", action
+            print "reward: ", reward
+            print "new_state: ", new_state
+            print "done :", done
+            """
             target_action = actor.target_model.predict(np.expand_dims(new_state, axis=0))
             future_reward = self.target_model.predict([np.expand_dims(new_state, axis=0), target_action])[0][0]
             reward += gamma * future_reward
@@ -204,7 +211,10 @@ class ActorCritic:
         # Update Actor model
         actor_model_weights  = self.actor.model.get_weights()
         actor_target_weights = self.actor.target_model.get_weights()
-		
+        
+        """
+        target_weights = TARGET_DISCOUNT*model_weights + (1-TARGET_DISCOUNT)*target_weights
+        """
         for i in range(len(actor_target_weights)):
             actor_target_weights[i] = self.TARGET_DISCOUNT*actor_model_weights[i] + (1-self.TARGET_DISCOUNT)*actor_target_weights[i]
         self.actor.target_model.set_weights(actor_target_weights)

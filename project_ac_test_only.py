@@ -14,6 +14,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import random
 import memory_ac as memory
+import pandas as pd
 
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
@@ -39,9 +40,9 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = False
+    continue_execution = True
     #fill this if continue_execution=True
-    resume_epoch = '100' # change to epoch to continue from
+    resume_epoch = '700' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -53,21 +54,23 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 2000
+        EPISODES = 1000
         STEPS = 50
         UPDATE_NETWORK = 500
         EPSILON = 1
-        EPSILON_DECAY = 1
-        MIN_EPSILON = 0.05
+        EPSILON_DECAY = 0.997
+        MIN_EPSILON = 0.2
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00001
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 100000
+        MEMORY_SIZE = 50000
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
+        TARGET_DISCOUNT = 1 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
+        MEMORIES = None
 
     else:
         #Load weights, monitor info and parameter info.
@@ -88,6 +91,8 @@ if __name__ == '__main__':
             A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
+            TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
+            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_test/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)
@@ -101,7 +106,7 @@ if __name__ == '__main__':
     critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
     sess.run(tf.initialize_all_variables())
-    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE)
+    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
     
     if continue_execution : actor_critic.loadWeights(actor_weights_path, critic_weights_path)
     
@@ -129,6 +134,8 @@ if __name__ == '__main__':
             episode_reward += reward
 
             action_memory.addMemory(cur_state, action, reward, next_state, done)
+            
+            #print type(cur_state), type(action), type(reward), type(next_state), type(done)
 
             cur_state = next_state
             
@@ -154,10 +161,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/min_distance.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data/max_reward.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/max_reward.csv')
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
