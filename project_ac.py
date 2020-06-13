@@ -56,10 +56,10 @@ if __name__ == '__main__':
         #PARAMETER LIST
         EPISODES = 1000
         STEPS = 50
-        UPDATE_NETWORK = 500
+        UPDATE_NETWORK = 1 # once per number of episodes
         EPSILON = 1
         EPSILON_DECAY = 0.997
-        MIN_EPSILON = 0.05
+        MIN_EPSILON = 0.1
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
@@ -113,7 +113,6 @@ if __name__ == '__main__':
     env._max_episode_steps = STEPS # env returns done after _max_episode_steps
     env = gym.wrappers.Monitor(env, outdir,force=not continue_execution, resume=continue_execution)
 
-    stepCounter = 0
     min_distance = 20
     max_reward = 0
     
@@ -140,14 +139,13 @@ if __name__ == '__main__':
             cur_state = next_state
             
             episode_step += 1
-            stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
                 actor_critic.train('random')
             
-            if stepCounter%UPDATE_NETWORK == 0:
-                actor_critic.updateTarget()
-
+        if (CURRENT_EPISODE%UPDATE_NETWORK == 0) and (len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY):
+            actor_critic.updateTarget()
+        
         resetVel = False
         while not resetVel:
             try:
