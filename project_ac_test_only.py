@@ -33,6 +33,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
+    env.set_start_mode("random")
+    
     outdir = '/home/katolab/experiment_data/AC_data_test/gazebo_gym_experiments/'
     path = '/home/katolab/experiment_data/AC_data_test/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
@@ -40,9 +42,8 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = True
-    #fill this if continue_execution=True
-    resume_epoch = '700' # change to epoch to continue from
+    #fill this
+    resume_epoch = '1000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -50,53 +51,29 @@ if __name__ == '__main__':
     critic_monitor_path = resume_path + '_critic'
     params_json  = resume_path + '.json'
     
-    if not continue_execution:
-        #Each time we take a sample and update our weights it is called a mini-batch.
-        #Each time we run through the entire dataset, it's called an epoch.
-        #PARAMETER LIST
-        EPISODES = 1000
+    #Load weights, monitor info and parameter info.
+    with open(params_json) as outfile:
+        d = json.load(outfile)
+        EPISODES = 100
         STEPS = 50
-        UPDATE_NETWORK = 500
-        EPSILON = 1
-        EPSILON_DECAY = 0.997
-        MIN_EPSILON = 0.2
-        MINIBATCH_SIZE = 100
-        MINIMUM_REPLAY_MEMORY = 100
-        A_LEARNING_RATE = 0.00001
-        C_LEARNING_RATE = 0.00001
-        DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 50000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        UPDATE_NETWORK = d.get('UPDATE_NETWORK')
+        EPSILON = 0
+        EPSILON_DECAY = 0
+        MIN_EPSILON = d.get('MIN_EPSILON')
+        MINIBATCH_SIZE = d.get('MINIBATCH_SIZE')
+        MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
+        A_LEARNING_RATE = d.get('A_LEARNING_RATE')
+        C_LEARNING_RATE = d.get('C_LEARNING_RATE')
+        DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
+        MEMORY_SIZE = d.get('MEMORY_SIZE')
+        A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
+        C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
         CURRENT_EPISODE = 0
-        TARGET_DISCOUNT = 1 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
-        MEMORIES = None
-
-    else:
-        #Load weights, monitor info and parameter info.
-        with open(params_json) as outfile:
-            d = json.load(outfile)
-            EPISODES = d.get('EPISODES')
-            STEPS = d.get('STEPS')
-            UPDATE_NETWORK = d.get('UPDATE_NETWORK')
-            EPSILON = d.get('EPSILON')
-            EPSILON_DECAY = d.get('EPSILON_DECAY')
-            MIN_EPSILON = d.get('MIN_EPSILON')
-            MINIBATCH_SIZE = d.get('MINIBATCH_SIZE')
-            MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
-            A_LEARNING_RATE = d.get('A_LEARNING_RATE')
-            C_LEARNING_RATE = d.get('C_LEARNING_RATE')
-            DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
-            MEMORY_SIZE = d.get('MEMORY_SIZE')
-            A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
-            C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
-            CURRENT_EPISODE = d.get('CURRENT_EPISODE')
-            TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
-            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_test/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
+        TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
             
-        clear_monitor_files(outdir)
-        copy_tree(actor_monitor_path,outdir)
-        copy_tree(critic_monitor_path,outdir)
+    clear_monitor_files(outdir)
+    copy_tree(actor_monitor_path,outdir)
+    copy_tree(critic_monitor_path,outdir)
     
     # Actor model to take actions 
     # state -> action
@@ -106,12 +83,13 @@ if __name__ == '__main__':
     critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
     sess.run(tf.initialize_all_variables())
-    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
+    actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, False, None)
     
-    if continue_execution : actor_critic.loadWeights(actor_weights_path, critic_weights_path)
+    # Load weights to NN
+    actor_critic.loadWeights(actor_weights_path, critic_weights_path)
     
     env._max_episode_steps = STEPS # env returns done after _max_episode_steps
-    env = gym.wrappers.Monitor(env, outdir,force=not continue_execution, resume=continue_execution)
+    env = gym.wrappers.Monitor(env, outdir,force=False, resume=True)
 
     stepCounter = 0
     min_distance = 20
@@ -141,12 +119,6 @@ if __name__ == '__main__':
             
             episode_step += 1
             stepCounter += 1
-
-            if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('random')
-            
-            if stepCounter%UPDATE_NETWORK == 0:
-                actor_critic.updateTarget()
 
         resetVel = False
         while not resetVel:

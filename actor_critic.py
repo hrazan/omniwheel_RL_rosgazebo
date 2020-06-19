@@ -227,4 +227,4 @@ class ActorCritic:
             critic_target_weights[i] = self.TARGET_DISCOUNT*critic_model_weights[i] + (1-self.TARGET_DISCOUNT)*critic_target_weights[i]
         self.critic.target_model.set_weights(critic_target_weights)
 
-        print "Network Upadated!"
+        #print "Network Upadated!"

@@ -33,6 +33,8 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
+    env.set_start_mode("random")
+    
     outdir = '/home/katolab/experiment_data/AC_data_2/gazebo_gym_experiments/'
     path = '/home/katolab/experiment_data/AC_data_2/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
@@ -56,7 +58,7 @@ if __name__ == '__main__':
         #PARAMETER LIST
         EPISODES = 1000
         STEPS = 50
-        UPDATE_NETWORK = 1 # once per number of episodes
+        UPDATE_NETWORK = 500 # once per number of steps
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.1
@@ -113,6 +115,7 @@ if __name__ == '__main__':
     env._max_episode_steps = STEPS # env returns done after _max_episode_steps
     env = gym.wrappers.Monitor(env, outdir,force=not continue_execution, resume=continue_execution)
 
+    stepCounter = 0
     min_distance = 20
     max_reward = 0
     
@@ -139,12 +142,13 @@ if __name__ == '__main__':
             cur_state = next_state
             
             episode_step += 1
+            stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
                 actor_critic.train('random')
             
-        if (CURRENT_EPISODE%UPDATE_NETWORK == 0) and (len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY):
-            actor_critic.updateTarget()
+            if stepCounter%UPDATE_NETWORK == 0:
+                actor_critic.updateTarget()
 
         resetVel = False
         while not resetVel:
@@ -198,3 +202,4 @@ if __name__ == '__main__':
             
     input()
     env.close()
+
