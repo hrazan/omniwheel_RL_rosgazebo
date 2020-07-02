@@ -51,7 +51,8 @@ class Memory:
                             action.append((0.1**int(action_raw[y][-1]))*float(action_raw[y][0:-5]))
                 self.exp.at[x,'action'] = np.array(action, dtype=np.float32)
                 
-            #print self.exp.at[0,'cur_state'], self.exp.at[0,'next_state'], self.exp.at[0,'action']
+            #print self.exp.at[0,'cur_state'] #, self.exp.at[0,'next_state'], self.exp.at[0,'action']
+            print "index: ", len(self.exp.index)
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':

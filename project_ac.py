@@ -33,7 +33,7 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    env.set_start_mode("random")
+    env.set_start_mode("static") #"random" or "static"
     
     outdir = '/home/katolab/experiment_data/AC_data/gazebo_gym_experiments/'
     path = '/home/katolab/experiment_data/AC_data/project_dqn_ep'
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '500' # change to epoch to continue from
+    resume_epoch = '400' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -62,8 +62,8 @@ if __name__ == '__main__':
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.1
-        MINIBATCH_SIZE = 100
-        MINIMUM_REPLAY_MEMORY = 100
+        MINIBATCH_SIZE = 1000
+        MINIMUM_REPLAY_MEMORY = 1000
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00005
         DISCOUNT_FACTOR = 0.99
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
-            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_test/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
+            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('random')
+                actor_critic.train('positive')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
