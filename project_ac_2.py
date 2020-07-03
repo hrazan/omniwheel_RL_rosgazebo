@@ -42,7 +42,7 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
     resume_epoch = '200' # change to epoch to continue from
     resume_path = path + resume_epoch
@@ -62,8 +62,8 @@ if __name__ == '__main__':
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.1
-        MINIBATCH_SIZE = 1000
-        MINIMUM_REPLAY_MEMORY = 1000
+        MINIBATCH_SIZE = 100
+        MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00005
         DISCOUNT_FACTOR = 0.99

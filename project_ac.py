@@ -62,8 +62,8 @@ if __name__ == '__main__':
         EPSILON = 1
         EPSILON_DECAY = 0.997
         MIN_EPSILON = 0.1
-        MINIBATCH_SIZE = 1000
-        MINIMUM_REPLAY_MEMORY = 1000
+        MINIBATCH_SIZE = 100
+        MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00005
         DISCOUNT_FACTOR = 0.99
