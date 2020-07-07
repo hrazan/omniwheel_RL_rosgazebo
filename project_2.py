@@ -26,13 +26,13 @@ if __name__ == '__main__':
 
     env = gym.make('GazeboProjectTurtlebot-v0')
 
-    outdir = '/tmp/gazebo_gym_experiments'
+    outdir = '/tmp/gazebo_gym_experiments_2'
     env = gym.wrappers.Monitor(env, outdir, force=True)
     plotter = liveplot.LivePlot(outdir)
-    qtabledir = '/home/katolab/experiment_data/Q_data/qtable.csv'
+    qtabledir = '/home/katolab/experiment_data/Q_data_2/qtable.csv'
     
     # Initiate learning information
-    with open('/home/katolab/experiment_data/Q_data/episode_data.csv','a+') as csvRWRD:
+    with open('/home/katolab/experiment_data/Q_data_2/episode_data.csv','a+') as csvRWRD:
         csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
         csvRWRD_writer.writerow(['Episode', 'Goal', 'Steps', 'Reward', 'Total Goals', 'Average Steps'])
     csvRWRD.close()
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
         if (x+1)%100==0:
             plotter.plot(env)
-            csvQOpen = open('/home/katolab/experiment_data/Q_data/qtable.csv','w')
+            csvQOpen = open('/home/katolab/experiment_data/Q_data_2/qtable.csv','w')
             csvq = csv.writer(csvQOpen, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             for qstate,qval in qlearn.q.items():
                 csvq.writerow([qstate[0],qstate[1],qval])
@@ -141,13 +141,13 @@ if __name__ == '__main__':
                 best_reward_file = reward_file[:]
 
             # Make txt file of best actions
-            with open('/home/katolab/experiment_data/Q_data/actions.txt','w') as txtfile:
+            with open('/home/katolab/experiment_data/Q_data_2/actions.txt','w') as txtfile:
 	              for item in best_act:
 		                txtfile.write("%s" % item)
             txtfile.close()
 
             # Make csv file of best actions' detail
-            csvOpen = open('/home/katolab/experiment_data/Q_data/actions_details.csv','w')
+            csvOpen = open('/home/katolab/experiment_data/Q_data_2/actions_details.csv','w')
             writer = csv.writer(csvOpen, dialect='excel')
             for act_num in range(len(best_act)):
                 writer.writerow([best_state_file[act_num], best_act[act_num], best_reward_file[act_num], best_act_time[act_num]/1000000, best_position[act_num], best_distance[act_num]])
@@ -167,8 +167,8 @@ if __name__ == '__main__':
         h, m = divmod(m, 60)
         print ("EP: "+str(x+1)+" - [alpha: "+str(round(qlearn.alpha,2))+" - gamma: "+str(round(qlearn.gamma,2))+" - epsilon: "+str(round(qlearn.epsilon,2))+"] - Reward: "+str(cumulated_reward)+"     Time: %d:%02d:%02d" % (h, m, s))
         
-        # Save learning information
-        with open('/home/katolab/experiment_data/Q_data/episode_data.csv','a+') as csvRWRD:
+        # Save rewards
+        with open('/home/katolab/experiment_data/Q_data_2/episode_data.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([x+1, int(env.goal), i+1, cumulated_reward, total_goals, avg_steps])
         csvRWRD.close()

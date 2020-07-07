@@ -4,10 +4,10 @@ from os import path
 import csv
 
 class QLearn:
-    def __init__(self, actions, epsilon, alpha, gamma):
+    def __init__(self, actions, epsilon, alpha, gamma, qdir):
         self.q = {}
-        if path.exists('/home/katolab/experiment_data/qtable.csv'):
-            with open('/home/katolab/experiment_data/qtable.csv',mode='r') as qtable:
+        if path.exists(qdir):
+            with open(qdir,mode='r') as qtable:
                 #self.q = csv.DictReader(qtable)
                 reader = csv.reader(qtable, quoting=csv.QUOTE_NONNUMERIC)
                 #self.q = {rows[0]:rows[1] for rows in reader}
