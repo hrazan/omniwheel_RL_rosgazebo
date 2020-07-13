@@ -25,13 +25,14 @@ class LivePlot(object):
         plt.ylabel(data_key)
         fig = plt.gcf().canvas.set_window_title('simulation_graph')
 
-    def plot(self, env):
+    def plot(self, env, directory):
         if self.data_key is rewards_key:
             data = gym.wrappers.Monitor.get_episode_rewards(env)
         else:
             data = gym.wrappers.Monitor.get_episode_lengths(env)
 
         plt.plot(data, color=self.line_color)
+        plt.savefig(directory + 'reward.png')
 
         # pause so matplotlib will display
         # may want to figure out matplotlib animation or use a different library in the future

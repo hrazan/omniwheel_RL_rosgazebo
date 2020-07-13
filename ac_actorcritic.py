@@ -169,6 +169,8 @@ class ActorCritic:
         self.MINIBATCH_SIZE = MINIBATCH_SIZE
         self.DISCOUNT = DISCOUNT_FACTOR
         self.TARGET_DISCOUNT = TARGET_DISCOUNT
+        self.bg_noise = None
+        self.action_dim = self.env.action_space.shape[0]
         
         # Replay memory to store experiences of the model with the environment
         # self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
@@ -182,21 +184,24 @@ class ActorCritic:
         self.critic.train(minibatch, self.actor, self.DISCOUNT, self.MINIBATCH_SIZE)
         self.actor.train(minibatch, self.critic, self.env)     
     
-    def act(self, cur_state, epsilon):
+    def ou_noise(self, x, rho=0.15, mu=0, dt=0.1, sigma=0.2, dim=1):
+        return x + rho * (mu-x) * dt + sigma * np.sqrt(dt) * np.random.normal(size=dim)
+    
+    def act(self, cur_state, new_episode):
         action = [] # array of action for learning [-1,1] or [0,1]
         action_step = [] # array of action for environment [min, max]
-        if np.random.random() < epsilon:
-            action_step = self.env.action_space.sample()
-            action_step = np.array(action_step, dtype=np.float32)
-            for a in range(len(action_step)):
-                action += [action_step[a]*(1/self.env.action_space.high[a])]
-            action = np.array(action, dtype=np.float32)
-        else:
-            action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
-            for a in range(len(action)):
-                action_step += [action[a]*self.env.action_space.high[a]]
-                #print self.env.action_space.high[a]
-        #print 'action: ', action
+        action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
+        
+        # Apply noise for exploration
+        if new_episode: self.bg_noise = np.zeros(self.action_dim)
+        noise = self.ou_noise(self.bg_noise, dim=self.action_dim)
+        action = np.clip(action + noise, -1, 1)
+        
+        for a in range(len(action)):
+            action_step += [action[a]*self.env.action_space.high[a]]
+            
+        self.bg_noise = noise
+        
         return action, action_step
     
     def saveModel(self, actor_path, critic_path):

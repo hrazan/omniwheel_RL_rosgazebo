@@ -8,7 +8,7 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import ac_actor-critic as ac
+import ac_actorcritic as ac
 import csv
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -33,10 +33,10 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    env.set_start_mode("static") #"random" or "static"
     
-    outdir = '/home/katolab/experiment_data/AC_data_4/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data_4/project_dqn_ep'
+    main_outdir = '/home/katolab/experiment_data/AC_data_4/'
+    outdir = main_outdir + 'gazebo_gym_experiments/'
+    path = main_outdir + 'project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     
     continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '200' # change to epoch to continue from
+    resume_epoch = '400' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -59,13 +59,11 @@ if __name__ == '__main__':
         EPISODES = 1000
         STEPS = 50
         UPDATE_NETWORK = 500 # once per number of steps
-        EPSILON = 1
-        EPSILON_DECAY = 0.997
-        MIN_EPSILON = 0.1
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00005
+        REWARD_SCALE = 1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 50000
         A_HIDDEN_LAYER = [512,512,512]
@@ -81,20 +79,18 @@ if __name__ == '__main__':
             EPISODES = d.get('EPISODES')
             STEPS = d.get('STEPS')
             UPDATE_NETWORK = d.get('UPDATE_NETWORK')
-            EPSILON = d.get('EPSILON')
-            EPSILON_DECAY = d.get('EPSILON_DECAY')
-            MIN_EPSILON = d.get('MIN_EPSILON')
             MINIBATCH_SIZE = d.get('MINIBATCH_SIZE')
             MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
             A_LEARNING_RATE = d.get('A_LEARNING_RATE')
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
+            REWARD_SCALE = d.get('REWARD_SCALE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
             MEMORY_SIZE = d.get('MEMORY_SIZE')
             A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
-            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_4/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
+            MEMORIES = pd.read_csv(main_outdir + 'experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)
@@ -120,23 +116,25 @@ if __name__ == '__main__':
     max_reward = 0
     
     start_time = time.time()
-
-    #start iterating from 'current epoch'.
+    
+    env.set_start_mode("static") #"random" or "static"
+    
+    #start iterating from 'current epoch'
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         cur_state = env.reset()
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
-        
+        new_episode = True
         while not done:
-            action, action_step = actor_critic.act(cur_state, EPSILON)
+            action, action_step = actor_critic.act(cur_state, new_episode)
             next_state, reward, done, _ = env.step(action_step)
 
             episode_reward += reward
 
             # Add experience to replay memory
-            actor_critic.replay_memory.addMemory(cur_state, action, reward, next_state, done)
+            actor_critic.replay_memory.addMemory(cur_state, action, reward*REWARD_SCALE, next_state, done)
             action_memory.addMemory(cur_state, action, reward, next_state, done)
 
             cur_state = next_state
@@ -145,10 +143,12 @@ if __name__ == '__main__':
             stepCounter += 1
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
-                actor_critic.train('positive')
+                actor_critic.train('random')
             
             if stepCounter%UPDATE_NETWORK == 0:
                 actor_critic.updateTarget()
+                
+            new_episode = done
 
         resetVel = False
         while not resetVel:
@@ -163,12 +163,12 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/min_distance.csv')
+            action_memory.exp.to_csv(main_outdir + 'min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/max_reward.csv')
+            action_memory.exp.to_csv(main_outdir + 'max_reward.csv')
         
-        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
+        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
         
         if (episode)%100==0:            
             #save model weights and monitoring data every 100 epochs.
@@ -178,28 +178,23 @@ if __name__ == '__main__':
             copy_tree(outdir,path+str(episode)+'_critic')
             
             #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'EPSILON', 'EPSILON_DECAY', 'MIN_EPSILON', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, EPSILON, EPSILON_DECAY, MIN_EPSILON, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
+            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'REWARD_SCALE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
+            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, REWARD_SCALE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
             
             #save experiences data
-            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/experience.csv')
+            actor_critic.replay_memory.exp.to_csv(main_outdir + 'experience.csv')
             
             # Show rewards graph
-            plotter.plot(env)
-            
-        if EPSILON > MIN_EPSILON:
-            EPSILON *= EPSILON_DECAY
-            EPSILON = max(EPSILON, MIN_EPSILON)
+            plotter.plot(env, main_outdir)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data_4/reward_ac.csv','a+') as csvRWRD:
+        with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
             
-    input()
     env.close()
 
