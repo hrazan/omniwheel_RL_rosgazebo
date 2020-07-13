@@ -13,7 +13,7 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import deepq_project as deepq
+import dqn_deepq as deepq
 import csv
 
 def detect_monitor_files(training_dir):
@@ -37,9 +37,9 @@ if __name__ == '__main__':
     path = '/home/katolab/experiment_data/NN_data/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
 
-    continue_execution = True
+    continue_execution = False
     #fill this if continue_execution=True
-    resume_epoch = '2000' # change to epoch to continue from
+    resume_epoch = '100' # change to epoch to continue from
     resume_path = path + resume_epoch
     weights_path = resume_path + '.h5'
     monitor_path = resume_path
@@ -60,7 +60,7 @@ if __name__ == '__main__':
         memorySize = 1000000
         network_inputs = 109
         network_outputs = 5
-        network_structure = [500,500,500]
+        network_structure = [1000,1000,1000]
         current_epoch = 0
 
         deepQ = deepq.DeepQ(network_inputs, network_outputs, memorySize, discountFactor, learningRate, learnStart)
@@ -70,10 +70,10 @@ if __name__ == '__main__':
         #ADD TRY CATCH fro this else
         with open(params_json) as outfile:
             d = json.load(outfile)
-            epochs = d.get('epochs') + 100
-            steps = 200
+            epochs = 2000
+            steps = 100 #d.get('steps')
             updateTargetNetwork = d.get('updateTargetNetwork')
-            explorationRate = 0
+            explorationRate = d.get('explorationRate')
             minibatch_size = d.get('minibatch_size')
             learnStart = d.get('learnStart')
             learningRate = d.get('learningRate')
@@ -100,6 +100,7 @@ if __name__ == '__main__':
     last100Filled = False
     stepCounter = 0
     highest_reward = 0
+    highest_reward_file = []
 
     start_time = time.time()
 
@@ -121,8 +122,17 @@ if __name__ == '__main__':
             newObservation, reward, done, info = env.step(action)
 
             cumulated_reward += reward
+            #print(cumulated_reward)
             if highest_reward < cumulated_reward:
                 highest_reward = cumulated_reward
+
+            deepQ.addMemory(observation, action, reward, newObservation, done)
+
+            if stepCounter >= learnStart:
+                if stepCounter <= updateTargetNetwork:
+                    deepQ.learnOnMiniBatch(minibatch_size, False)
+                else :
+                    deepQ.learnOnMiniBatch(minibatch_size, True)
 
             observation = newObservation
 
@@ -142,18 +152,37 @@ if __name__ == '__main__':
                     h, m = divmod(m, 60)
                     """
                     print ("EP " + str(epoch) + " - " + format(episode_step + 1) + "/" + str(steps) + " Episode steps - last100 Steps : " + str((sum(last100Scores) / len(last100Scores))) + " - Cumulated R: " + str(cumulated_reward) + "   Eps=" + str(round(explorationRate, 2)) + "     Time: %d:%02d:%02d" % (h, m, s))
+                    if (epoch)%100==0:
+                        #save model weights and monitoring data every 100 epochs.
+                        deepQ.saveModel(path+str(epoch)+'.h5')
+                        env._flush()
+                        copy_tree(outdir,path+str(epoch))
+                        #save simulation parameters.
+                        parameter_keys = ['epochs','steps','updateTargetNetwork','explorationRate','minibatch_size','learnStart','learningRate','discountFactor','memorySize','network_inputs','network_outputs','network_structure','current_epoch']
+                        parameter_values = [epochs, steps, updateTargetNetwork, explorationRate, minibatch_size, learnStart, learningRate, discountFactor, memorySize, network_inputs, network_outputs, network_structure, epoch]
+                        parameter_dictionary = dict(zip(parameter_keys, parameter_values))
+                        with open(path+str(epoch)+'.json', 'w') as outfile:
+                            json.dump(parameter_dictionary, outfile)
 
             stepCounter += 1
+            if stepCounter % updateTargetNetwork == 0:
+                deepQ.updateTargetNetwork()
+                print ("updating target network")
 
             episode_step += 1
 
-        with open('/home/katolab/experiment_data/test.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/reward.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode_step, cumulated_reward])
         csvRWRD.close()
 
+        explorationRate *= 0.997 #epsilon decay
+        # explorationRate -= (2.0/epochs)
+        explorationRate = max (0.05, explorationRate)
+
         if epoch % 100 == 0:
             plotter.plot(env)
-
+            
+    #csvRWRD.close()
     input()
     env.close()

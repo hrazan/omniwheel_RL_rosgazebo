@@ -8,7 +8,7 @@ import random
 import time
 import rospy
 
-import qlearn_project as qlearn
+import q_qlearn as qlearn
 import liveplot
 import csv
 
@@ -26,14 +26,21 @@ if __name__ == '__main__':
 
     env = gym.make('GazeboProjectTurtlebot-v0')
 
-    outdir = '/tmp/gazebo_gym_experiments'
+    outdir = '/tmp/gazebo_gym_experiments_2'
     env = gym.wrappers.Monitor(env, outdir, force=True)
     plotter = liveplot.LivePlot(outdir)
+    qtabledir = '/home/katolab/experiment_data/Q_data_2/qtable.csv'
+    
+    # Initiate learning information
+    with open('/home/katolab/experiment_data/Q_data_2/episode_data.csv','a+') as csvRWRD:
+        csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
+        csvRWRD_writer.writerow(['Episode', 'Goal', 'Steps', 'Reward', 'Total Goals', 'Average Steps'])
+    csvRWRD.close()
     
     last_time_steps = numpy.ndarray(0)
 
     qlearn = qlearn.QLearn(actions=range(env.action_space.n),
-                    alpha=0.2, gamma=0.8, epsilon=0.0)
+                    alpha=0.2, gamma=0.8, epsilon=0.51, qdir=qtabledir)
 
     initial_epsilon = qlearn.epsilon
 
@@ -42,7 +49,7 @@ if __name__ == '__main__':
     start_time = time.time()
     total_goals = 0
     total_succeed_steps = 0
-    total_episodes = 1001
+    total_episodes = 1000
     highest_reward = -10000000
     fewest_steps = 10000000
 
@@ -52,6 +59,10 @@ if __name__ == '__main__':
     best_distance = []
     best_state_file = []
     best_reward_file = []
+    avg_steps = 0
+    
+    # True if you want to start with a random position
+    env.set_randomstart(True)
 
     for x in range(total_episodes):
         done = False
@@ -59,6 +70,9 @@ if __name__ == '__main__':
         cumulated_reward = 0 #Should going forward give more reward then L/R ?
 
         observation = env.reset()
+
+        if qlearn.epsilon > 0.05:
+            qlearn.epsilon *= epsilon_discount
 
         #render() #defined above, not env.render()
 
@@ -84,7 +98,7 @@ if __name__ == '__main__':
 
             nextState = ''.join(map(str, observation))
 
-            #qlearn.learn(state, action, reward, nextState)
+            qlearn.learn(state, action, reward, nextState)
 
             env._flush(force=True)
 
@@ -104,14 +118,14 @@ if __name__ == '__main__':
                 break
 
 
-        if (x>0 and x%100==0):
+        if (x+1)%100==0:
             plotter.plot(env)
-            csvQOpen = open('/home/razan/experiment_data/qtable.csv','w')
+            csvQOpen = open('/home/katolab/experiment_data/Q_data_2/qtable.csv','w')
             csvq = csv.writer(csvQOpen, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             for qstate,qval in qlearn.q.items():
                 csvq.writerow([qstate[0],qstate[1],qval])
             csvQOpen.close()
-            print qlearn.q
+            print "Q table updated!"
 
         if env.goal == True : 
             total_goals += 1
@@ -127,18 +141,17 @@ if __name__ == '__main__':
                 best_reward_file = reward_file[:]
 
             # Make txt file of best actions
-            with open('/home/razan/experiment_data/actions.txt','w') as txtfile:
+            with open('/home/katolab/experiment_data/Q_data_2/actions.txt','w') as txtfile:
 	              for item in best_act:
 		                txtfile.write("%s" % item)
             txtfile.close()
 
             # Make csv file of best actions' detail
-            csvOpen = open('/home/razan/experiment_data/actions_details.csv','w')
+            csvOpen = open('/home/katolab/experiment_data/Q_data_2/actions_details.csv','w')
             writer = csv.writer(csvOpen, dialect='excel')
             for act_num in range(len(best_act)):
                 writer.writerow([best_state_file[act_num], best_act[act_num], best_reward_file[act_num], best_act_time[act_num]/1000000, best_position[act_num], best_distance[act_num]])
             csvOpen.close()
-            
 
         print("Number of steps: "+str(i+1))
         print("Fewest succeed steps: "+str(fewest_steps))
@@ -147,27 +160,23 @@ if __name__ == '__main__':
         if total_goals==0:
             print("Average succeed steps: 0")
         else:
-            print("Average succeed steps: "+str(total_succeed_steps/total_goals))
+            avg_steps = total_succeed_steps/total_goals
+            print("Average succeed steps: "+str(avg_steps))
 
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         print ("EP: "+str(x+1)+" - [alpha: "+str(round(qlearn.alpha,2))+" - gamma: "+str(round(qlearn.gamma,2))+" - epsilon: "+str(round(qlearn.epsilon,2))+"] - Reward: "+str(cumulated_reward)+"     Time: %d:%02d:%02d" % (h, m, s))
+        
+        # Save rewards
+        with open('/home/katolab/experiment_data/Q_data_2/episode_data.csv','a+') as csvRWRD:
+            csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
+            csvRWRD_writer.writerow([x+1, int(env.goal), i+1, cumulated_reward, total_goals, avg_steps])
+        csvRWRD.close()
 
     #Github table content
     print ("\n|"+str(total_episodes)+"|"+str(qlearn.alpha)+"|"+str(qlearn.gamma)+"|"+str(initial_epsilon)+"*"+str(epsilon_discount))
 
     l = last_time_steps.tolist()
     l.sort()
-
-    print("Highest succeed reward: "+str(highest_reward))
-    print("Fewest steps: "+str(fewest_steps))
-    if total_goals==0:
-        print("Average succeed steps: 0")
-    else:
-        print("Average succeed steps: "+str(total_succeed_steps/total_goals))
-    print("Total goals: "+str(total_goals))
-    #print(qlearn.q)
-
-    input()
 
     env.close()

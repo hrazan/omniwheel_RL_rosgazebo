@@ -6,7 +6,7 @@ from keras.layers import Dense, Activation, Dropout
 from keras.models import load_model
 from keras.optimizers import Adam
 
-import memory
+import dqn_memory as memory
 
 
 class DeepQ:

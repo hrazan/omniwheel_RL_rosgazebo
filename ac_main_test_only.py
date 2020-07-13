@@ -8,7 +8,7 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import actor_critic as ac
+import ac_actor-critic as ac
 import csv
 import numpy as np
 import tensorflow.compat.v1 as tf

@@ -8,7 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import load_model
 import tensorflow as tf
 from collections import deque
-import memory_ac as memory
+import ac_memory as memory
 
 class Actor:
     def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):

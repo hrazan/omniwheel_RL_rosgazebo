@@ -8,7 +8,7 @@ import random
 import time
 import rospy
 
-import qlearn_project as qlearn
+import q_qlearn as qlearn
 import liveplot
 import csv
 
@@ -49,7 +49,7 @@ if __name__ == '__main__':
     start_time = time.time()
     total_goals = 0
     total_succeed_steps = 0
-    total_episodes = 100
+    total_episodes = 1000
     highest_reward = -10000000
     fewest_steps = 10000000
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     avg_steps = 0
     
     # True if you want to start with a random position
-    env.set_randomstart(False)
+    env.set_randomstart(True)
 
     for x in range(total_episodes):
         done = False

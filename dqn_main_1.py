@@ -13,7 +13,7 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import deepq_project as deepq
+import dqn_deepq as deepq
 import csv
 
 def detect_monitor_files(training_dir):

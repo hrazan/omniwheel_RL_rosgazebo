@@ -8,12 +8,12 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import actor_critic as ac
+import ac_actor-critic as ac
 import csv
 import numpy as np
 import tensorflow.compat.v1 as tf
 import random
-import memory_ac as memory
+import ac_memory as memory
 import pandas as pd
 
 def detect_monitor_files(training_dir):
@@ -35,8 +35,8 @@ if __name__ == '__main__':
     env = gym.make('GazeboProjectTurtlebotAc-v0')
     env.set_start_mode("static") #"random" or "static"
     
-    outdir = '/home/katolab/experiment_data/AC_data_4/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data_4/project_dqn_ep'
+    outdir = '/home/katolab/experiment_data/AC_data_2/gazebo_gym_experiments/'
+    path = '/home/katolab/experiment_data/AC_data_2/project_dqn_ep'
     plotter = liveplot.LivePlot(outdir)
     
     action_dim = env.action_space.shape[0]
@@ -94,7 +94,7 @@ if __name__ == '__main__':
             C_HIDDEN_LAYER = d.get('C_HIDDEN_LAYER')
             CURRENT_EPISODE = d.get('CURRENT_EPISODE')
             TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
-            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_4/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
+            MEMORIES = pd.read_csv('/home/katolab/experiment_data/AC_data_2/experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
         copy_tree(actor_monitor_path,outdir)
@@ -163,10 +163,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/min_distance.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/max_reward.csv')
+            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/max_reward.csv')
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
@@ -185,7 +185,7 @@ if __name__ == '__main__':
                 json.dump(parameter_dictionary, outfile)
             
             #save experiences data
-            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_4/experience.csv')
+            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_2/experience.csv')
             
             # Show rewards graph
             plotter.plot(env)
@@ -195,7 +195,7 @@ if __name__ == '__main__':
             EPSILON = max(EPSILON, MIN_EPSILON)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data_4/reward_ac.csv','a+') as csvRWRD:
+        with open('/home/katolab/experiment_data/AC_data_2/reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()

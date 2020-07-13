@@ -8,7 +8,7 @@ import random
 import time
 import rospy
 
-import qlearn_project as qlearn
+import q_qlearn as qlearn
 import liveplot
 import csv
 
