@@ -33,18 +33,19 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
+    action_dim = env.action_space.shape[0]
+    observation_dim = env.observation_space.shape
     
     main_outdir = '/home/katolab/experiment_data/AC_data_3/'
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_dqn_ep'
-    plotter = liveplot.LivePlot(outdir)
-    
-    action_dim = env.action_space.shape[0]
-    observation_dim = env.observation_space.shape
     
     continue_execution = False
+    if not continue_execution: os.makedirs(outdir)
+    plotter = liveplot.LivePlot(outdir)
+    
     #fill this if continue_execution=True
-    resume_epoch = '400' # change to epoch to continue from
+    resume_epoch = '200' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -58,18 +59,18 @@ if __name__ == '__main__':
         #PARAMETER LIST
         EPISODES = 1000
         STEPS = 50
-        UPDATE_NETWORK = 500 # once per number of steps
+        UPDATE_NETWORK = 1 # once per number of steps
         MINIBATCH_SIZE = 100
         MINIMUM_REPLAY_MEMORY = 100
         A_LEARNING_RATE = 0.00001
         C_LEARNING_RATE = 0.00005
-        REWARD_SCALE = 1
+        REWARD_SCALE = 10
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 50000
         A_HIDDEN_LAYER = [512,512,512]
         C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
-        TARGET_DISCOUNT = 1 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
+        TARGET_DISCOUNT = 0.0001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
 
     else:
@@ -163,10 +164,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv(main_outdir + 'min_distance.csv')
+            action_memory.exp.to_csv(outdir + 'min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv(main_outdir + 'max_reward.csv')
+            action_memory.exp.to_csv(outdir + 'max_reward.csv')
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
         
@@ -188,7 +189,7 @@ if __name__ == '__main__':
             actor_critic.replay_memory.exp.to_csv(main_outdir + 'experience.csv')
             
             # Show rewards graph
-            plotter.plot(env, main_outdir)
+            plotter.plot(env, outdir)
         
         # Save rewards
         with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
