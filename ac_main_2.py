@@ -60,17 +60,17 @@ if __name__ == '__main__':
         EPISODES = 1000
         STEPS = 50
         UPDATE_NETWORK = 1 # once per number of steps
-        MINIBATCH_SIZE = 100
-        MINIMUM_REPLAY_MEMORY = 100
-        A_LEARNING_RATE = 0.00001
-        C_LEARNING_RATE = 0.00005
-        REWARD_SCALE = 10
+        MINIBATCH_SIZE = 64
+        MINIMUM_REPLAY_MEMORY = 64
+        A_LEARNING_RATE = 0.0001
+        C_LEARNING_RATE = 0.0001
+        REWARD_SCALE = 1
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 50000
+        MEMORY_SIZE = 100000
         A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[],[512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        C_HIDDEN_LAYER = [[512],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
-        TARGET_DISCOUNT = 0.0001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
+        TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
 
     else:
