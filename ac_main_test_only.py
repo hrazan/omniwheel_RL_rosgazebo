@@ -8,12 +8,12 @@ from distutils.dir_util import copy_tree
 import os
 import json
 import liveplot
-import ac_actor-critic as ac
+import ac_actorcritic as ac
 import csv
 import numpy as np
 import tensorflow.compat.v1 as tf
 import random
-import memory_ac as memory
+import ac_memory as memory
 import pandas as pd
 
 def detect_monitor_files(training_dir):
@@ -135,10 +135,10 @@ if __name__ == '__main__':
         
         if env.subgoal_as_dist_to_goal < min_distance:
             min_distance = env.subgoal_as_dist_to_goal
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/min_distance.csv')
+            action_memory.exp.to_csv(outdir + 'min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
-            action_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/max_reward.csv')
+            action_memory.exp.to_csv(outdir + 'max_reward.csv')
         
         print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
         
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             plotter.plot(env, outdir)
         
         # Save rewards
-        with open('/home/katolab/experiment_data/AC_data_test/reward_ac.csv','a+') as csvRWRD:
+        with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
