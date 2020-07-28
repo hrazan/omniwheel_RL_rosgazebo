@@ -33,14 +33,14 @@ if __name__ == '__main__':
     
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
-    env.set_start_mode("random")
-    
-    outdir = '/home/katolab/experiment_data/AC_data_test/gazebo_gym_experiments/'
-    path = '/home/katolab/experiment_data/AC_data_test/project_dqn_ep'
-    plotter = liveplot.LivePlot(outdir)
-    
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
+    
+    main_outdir = '/home/katolab/experiment_data/AC_data_test/'
+    outdir = main_outdir + 'gazebo_gym_experiments/'
+    path = main_outdir + 'project_dqn_ep'
+    
+    plotter = liveplot.LivePlot(outdir)
     
     #fill this
     resume_epoch = '1000' # change to epoch to continue from
@@ -96,6 +96,8 @@ if __name__ == '__main__':
     max_reward = 0
     
     start_time = time.time()
+    
+    env.set_start_mode("static") #"random" or "static"
 
     #start iterating from 'current epoch'.
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
@@ -104,9 +106,9 @@ if __name__ == '__main__':
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
-        
+        new_episode = True
         while not done:
-            action, action_step = actor_critic.act(cur_state, EPSILON)
+            action, action_step = actor_critic.act(cur_state, new_episode)
             next_state, reward, done, _ = env.step(action_step)
 
             episode_reward += reward
@@ -143,9 +145,11 @@ if __name__ == '__main__':
         if (episode)%100==0:
             env._flush()
             
+            #save experiences data
+            actor_critic.replay_memory.exp.to_csv(main_outdir + 'experience.csv')
+            
             # Show rewards graph
-            plotter.plot(env)
-            actor_critic.replay_memory.exp.to_csv('/home/katolab/experiment_data/AC_data_test/experience.csv')
+            plotter.plot(env, outdir)
         
         # Save rewards
         with open('/home/katolab/experiment_data/AC_data_test/reward_ac.csv','a+') as csvRWRD:
@@ -153,5 +157,4 @@ if __name__ == '__main__':
             csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
         
-    input()
     env.close()

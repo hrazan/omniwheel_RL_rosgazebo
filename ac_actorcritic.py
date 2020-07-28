@@ -99,9 +99,9 @@ class Critic:
             if len(state_h)>1:
                 for layer in xrange(1, len(state_h), 1):
                     state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
-        except ValueError:
-            print "Error: insert at least one hidden layer of Critic's model"
-        input_merge = Dense(merge_h[0], activation='relu')(state_h[-1])
+            input_merge = Dense(merge_h[0], activation='relu')(state_h[-1])
+        except:
+            input_merge = Dense(merge_h[0], activation='relu')(state_input)
         
         # Actor's Hidden Layers
         action_input = Input(shape=(self.action_dim,))
