@@ -68,7 +68,7 @@ if __name__ == '__main__':
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
         A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[512],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        C_HIDDEN_LAYER = [[],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
