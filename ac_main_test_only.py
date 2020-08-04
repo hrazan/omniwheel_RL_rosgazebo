@@ -140,7 +140,7 @@ if __name__ == '__main__':
             max_reward = episode_reward
             action_memory.exp.to_csv(outdir + 'max_reward.csv')
         
-        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + " | epsilon: " + str(EPSILON) + "| Time: %d:%02d:%02d" % (h, m, s))
+        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " R: " + str(episode_reward) + " | Dist: " + str(env.subgoal_as_dist_to_goal) + " | Max R: " + str(max_reward) + " | Min Dist: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
         
         if (episode)%100==0:
             env._flush()
