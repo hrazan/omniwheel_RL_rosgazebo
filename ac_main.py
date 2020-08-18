@@ -40,12 +40,12 @@ if __name__ == '__main__':
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_dqn_ep'
     
-    continue_execution = False
+    continue_execution =False
     if not continue_execution: os.makedirs(outdir)
     plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '400' # change to epoch to continue from
+    resume_epoch = '700' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         MINIMUM_REPLAY_MEMORY = 64
         A_LEARNING_RATE = 0.0001
         C_LEARNING_RATE = 0.0001
-        REWARD_SCALE = 1
+        REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
         A_HIDDEN_LAYER = [512,512,512]
@@ -169,7 +169,7 @@ if __name__ == '__main__':
             max_reward = episode_reward
             action_memory.exp.to_csv(outdir + 'max_reward.csv')
         
-        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " Reward: " + str(episode_reward) + " | Max Reward: " + str(max_reward) + " | Min Distance: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
+        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " R: " + str(episode_reward) + " | Dist: " + str(env.subgoal_as_dist_to_goal) + " | Max R: " + str(max_reward) + " | Min Dist: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
         
         if (episode)%100==0:            
             #save model weights and monitoring data every 100 epochs.
