@@ -16,6 +16,9 @@ import random
 import ac_memory as memory
 import pandas as pd
 
+#for xrange
+from past.builtins import xrange
+
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
 

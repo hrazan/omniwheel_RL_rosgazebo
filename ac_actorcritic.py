@@ -10,6 +10,9 @@ import tensorflow as tf
 from collections import deque
 import ac_memory as memory
 
+#for xrange
+from past.builtins import xrange
+
 class Actor:
     def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
         # setting our created session as default session
@@ -39,7 +42,7 @@ class Actor:
         try:
             state_h[0] = Dense(state_h[0], activation='relu')(state_input)
         except ValueError:
-            print "Error: insert at least one hidden layer of Actor's model"
+            print ("Error: insert at least one hidden layer of Actor's model")
         if len(state_h)>1:
             for layer in xrange(1, len(state_h), 1):
                 state_h[layer] = Dense(state_h[layer], activation='relu')(state_h[layer-1])
@@ -122,7 +125,7 @@ class Critic:
                 for layer in xrange(1, len(merge_h), 1):
                     merge_h[layer] = Dense(merge_h[layer], activation='relu')(merge_h[layer-1])
         except ValueError:
-            print "Error: insert at least one hidden layer of Critic's model"
+            print ("Error: insert at least one hidden layer of Critic's model")
         output = Dense(1, activation='linear')(merge_h[-1])
                 
         model = Model(inputs=[state_input, action_input], outputs=output)

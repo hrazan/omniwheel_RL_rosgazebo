@@ -52,7 +52,7 @@ class Memory:
                 self.exp.at[x,'action'] = np.array(action, dtype=np.float32)
                 
             #print self.exp.at[0,'cur_state'] #, self.exp.at[0,'next_state'], self.exp.at[0,'action']
-            print "index: ", len(self.exp.index)
+            print ("index: ", len(self.exp.index))
 
     def getMiniBatch(self, size, mode) :
         if mode=='positive':
@@ -71,7 +71,7 @@ class Memory:
         elif mode == 'random':
             memories = self.exp.sample(n=size)
         else:
-            print "Error! Enter mode: 'positive' or 'random'"
+            print ("Error! Enter mode: 'positive' or 'random'")
         memories = memories.values.tolist()
         #print memories
         return memories

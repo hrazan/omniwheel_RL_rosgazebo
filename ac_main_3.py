@@ -16,6 +16,9 @@ import random
 import ac_memory as memory
 import pandas as pd
 
+#for xrange
+from past.builtins import xrange
+
 def detect_monitor_files(training_dir):
     return [os.path.join(training_dir, f) for f in os.listdir(training_dir) if f.startswith('openaigym')]
 
@@ -40,12 +43,12 @@ if __name__ == '__main__':
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_dqn_ep'
     
-    continue_execution = False
+    continue_execution = True
     if not continue_execution: os.makedirs(outdir)
     plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '100' # change to epoch to continue from
+    resume_epoch = '600' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
