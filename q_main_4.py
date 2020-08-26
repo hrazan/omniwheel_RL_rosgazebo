@@ -33,7 +33,7 @@ if __name__ == '__main__':
     main_outdir = '/home/katolab/experiment_data/Q_data_4/'
     qtabledir = main_outdir + 'qtable.csv'
     
-    continue_execution = True
+    continue_execution = False
     if not continue_execution: os.makedirs(main_outdir)
     
     # Initiate learning information
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     avg_steps = 0
     
     # True if you want to start with a random position
-    env.set_randomstart(True)
+    env.set_randomstart(False)
 
     for x in range(total_episodes):
         done = False
@@ -130,7 +130,7 @@ if __name__ == '__main__':
             for qstate,qval in qlearn.q.items():
                 csvq.writerow([qstate[0],qstate[1],qval])
             csvQOpen.close()
-            print "Q table updated!"
+            print("Q table updated!")
 
         if env.goal == True : 
             total_goals += 1
