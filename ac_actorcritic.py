@@ -207,13 +207,17 @@ class ActorCritic:
         
         return action, action_step
     
-    def saveModel(self, actor_path, critic_path):
+    def saveModel(self, actor_path, critic_path, actor_target_path, critic_target_path):
         self.actor.model.save(actor_path)
         self.critic.model.save(critic_path)
+        self.actor.target_model.save(actor_target_path)
+        self.critic.target_model.save(critic_target_path)
         
-    def loadWeights(self, actor_weights_path, critic_weights_path):
-        self.actor.model.set_weights(load_model(actor_weights_path).get_weights())
-        self.critic.model.set_weights(load_model(critic_weights_path).get_weights())
+    def loadModels(self, actor_path, critic_path, actor_target_path, critic_target_path):
+        self.actor.model = load_model(actor_path)
+        self.actor.target_model = load_model(actor_target_path)
+        self.critic.model = load_model(critic_path)
+        self.critic.target_model = load_model(critic_target_path)
                 
     def updateTarget(self):
         # Update Actor model

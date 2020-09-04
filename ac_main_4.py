@@ -30,6 +30,9 @@ def clear_monitor_files(training_dir):
         print(file)
         os.unlink(file)
 
+states = []
+actions = []
+
 if __name__ == '__main__':
     sess = tf.Session()
     tf.keras.backend.set_session(sess)
@@ -48,10 +51,12 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '100' # change to epoch to continue from
+    resume_epoch = '2500' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
+    actor_target_weights_path =  resume_path + '_actor_target.h5'
     critic_weights_path = resume_path + '_critic.h5'
+    critic_target_weights_path = resume_path + '_critic_target.h5'
     actor_monitor_path = resume_path + '_actor'
     critic_monitor_path = resume_path + '_critic'
     params_json  = resume_path + '.json'
@@ -60,7 +65,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 1000
+        EPISODES = 3000
         STEPS = 50
         UPDATE_NETWORK = 1 # once per number of steps
         MINIBATCH_SIZE = 64
@@ -110,7 +115,7 @@ if __name__ == '__main__':
     sess.run(tf.initialize_all_variables())
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
     
-    if continue_execution : actor_critic.loadWeights(actor_weights_path, critic_weights_path)
+    if continue_execution : actor_critic.loadModels(actor_weights_path, critic_weights_path, actor_target_weights_path, critic_target_weights_path)
     
     env._max_episode_steps = STEPS # env returns done after _max_episode_steps
     env = gym.wrappers.Monitor(env, outdir,force=not continue_execution, resume=continue_execution)
@@ -121,19 +126,40 @@ if __name__ == '__main__':
     
     start_time = time.time()
     
-    env.set_start_mode("static") #"random" or "static"
+    env.set_start_mode("random") #"random" or "static"
+    
+    def make_state(states, actions, state, action):
+        # update states and actions
+        states.pop(0)
+        actions.pop(0)
+        states.append(state)
+        actions.append(action)
+        
+        # merge past state and action
+        _state = []
+        for i in range(len(states)):
+            _state += list(actions[i]) + list(states[i])
+        return states, actions, np.asarray(tuple(_state))        
     
     #start iterating from 'current epoch'
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
-        cur_state = env.reset()
+        
+        first_state = env.reset()
+        first_action = np.array([0,0,0])
+        states = [first_state, first_state, first_state]
+        actions = [first_action, first_action, first_action]
+        states, actions, cur_state = make_state(states, actions, first_state, first_action)
+        
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         new_episode = True
         while not done:
             action, action_step = actor_critic.act(cur_state, new_episode)
-            next_state, reward, done, _ = env.step(action_step)
+            _next_state, reward, done, _ = env.step(action_step)
+            
+            states, actions, next_state = make_state(states, actions, _next_state, action)
 
             episode_reward += reward
 
@@ -176,7 +202,7 @@ if __name__ == '__main__':
         
         if (episode)%100==0:            
             #save model weights and monitoring data every 100 epochs.
-            actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5')
+            actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5', path+str(episode)+'_actor_target.h5', path+str(episode)+'_critic_target.h5')
             env._flush()
             copy_tree(outdir,path+str(episode)+'_actor')
             copy_tree(outdir,path+str(episode)+'_critic')

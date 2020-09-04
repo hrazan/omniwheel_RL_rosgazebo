@@ -21,7 +21,7 @@ class Memory:
             
             # String to array of float
             for x in range(len(self.exp.index)):
-                cur_state_raw = self.exp.at[x,'cur_state'][2:-1].split(' ')
+                cur_state_raw = self.exp.at[x,'cur_state'][1:-1].split(' ')
                 cur_state = []
                 for y in range(len(cur_state_raw)):
                     if cur_state_raw[y] != '':
@@ -31,7 +31,7 @@ class Memory:
                             cur_state.append((0.1**int(cur_state_raw[y][-1]))*float(cur_state_raw[y][0:-5]))
                 self.exp.at[x,'cur_state'] = np.asarray(tuple(cur_state))
                 
-                next_state_raw = self.exp.at[x,'next_state'][2:-1].split(' ')
+                next_state_raw = self.exp.at[x,'next_state'][1:-1].split(' ')
                 next_state = []
                 for y in range(len(next_state_raw)):
                     if next_state_raw[y] != '':
