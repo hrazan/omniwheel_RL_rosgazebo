@@ -42,7 +42,7 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    main_outdir = '/home/katolab/experiment_data/AC_data/'
+    main_outdir = '/home/katolab/experiment_data/AC_data_0/'
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_dqn_ep'
     
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '2700' # change to epoch to continue from
+    resume_epoch = '400' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -75,8 +75,8 @@ if __name__ == '__main__':
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        A_HIDDEN_LAYER = [1024,1024,1024]
+        C_HIDDEN_LAYER = [[],[],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
