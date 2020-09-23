@@ -16,8 +16,8 @@ from past.builtins import xrange
 class Actor:
     def __init__(self, sess, action_dim, observation_dim, learningRate, hiddenLayer):
         # setting our created session as default session
-        self.sess = sess
         K.set_session(sess)
+        self.sess = sess
         self.action_dim = action_dim
         self.observation_dim = observation_dim
         self.learningRate = learningRate
@@ -190,14 +190,18 @@ class ActorCritic:
     def ou_noise(self, x, rho=0.15, mu=0, dt=0.1, sigma=0.2, dim=1):
         return x + rho * (mu-x) * dt + sigma * np.sqrt(dt) * np.random.normal(size=dim)
     
-    def act(self, cur_state, new_episode):
+    def act(self, cur_state, new_episode, explorationRate):
         action = [] # array of action for learning [-1,1] or [0,1]
         action_step = [] # array of action for environment [min, max]
         action = self.actor.model.predict(np.expand_dims(cur_state, axis=0))[0]
         
-        # Apply noise for exploration
-        if new_episode: self.bg_noise = np.zeros(self.action_dim)
-        noise = self.ou_noise(self.bg_noise, dim=self.action_dim)
+        # Apply noise for exploration with greedy
+        rand = random.random()
+        if rand <= explorationRate :
+            if new_episode: self.bg_noise = np.zeros(self.action_dim)
+            noise = self.ou_noise(self.bg_noise, dim=self.action_dim) 
+        else :
+            noise = np.zeros(self.action_dim)
         action = np.clip(action + noise, -1, 1)
         
         for a in range(len(action)):

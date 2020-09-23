@@ -30,9 +30,6 @@ def clear_monitor_files(training_dir):
         print(file)
         os.unlink(file)
 
-states = []
-actions = []
-
 if __name__ == '__main__':
     sess = tf.Session()
     tf.keras.backend.set_session(sess)
@@ -51,7 +48,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '2500' # change to epoch to continue from
+    resume_epoch = '2600' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -65,13 +62,14 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 3000
-        STEPS = 50
+        EPISODES = 1000
+        STEPS = 150
         UPDATE_NETWORK = 1 # once per number of steps
         MINIBATCH_SIZE = 64
         MINIMUM_REPLAY_MEMORY = 64
         A_LEARNING_RATE = 0.0001
         C_LEARNING_RATE = 0.0001
+        GREEDY_RATE = 1
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 100000
@@ -92,6 +90,7 @@ if __name__ == '__main__':
             MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
             A_LEARNING_RATE = d.get('A_LEARNING_RATE')
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
+            GREEDY_RATE = d.get('GREEDY_RATE')
             REWARD_SCALE = d.get('REWARD_SCALE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
             MEMORY_SIZE = d.get('MEMORY_SIZE')
@@ -128,38 +127,20 @@ if __name__ == '__main__':
     
     env.set_start_mode("random") #"random" or "static"
     
-    def make_state(states, actions, state, action):
-        # update states and actions
-        states.pop(0)
-        actions.pop(0)
-        states.append(state)
-        actions.append(action)
-        
-        # merge past state and action
-        _state = []
-        for i in range(len(states)):
-            _state += list(actions[i]) + list(states[i])
-        return states, actions, np.asarray(tuple(_state))        
-    
     #start iterating from 'current epoch'
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         
-        first_state = env.reset()
-        first_action = np.array([0,0,0])
-        states = [first_state, first_state, first_state]
-        actions = [first_action, first_action, first_action]
-        states, actions, cur_state = make_state(states, actions, first_state, first_action)
-        
+        cur_state = np.asarray(env.reset())
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         new_episode = True
         while not done:
-            action, action_step = actor_critic.act(cur_state, new_episode)
-            _next_state, reward, done, _ = env.step(action_step)
+            action, action_step = actor_critic.act(cur_state, new_episode, GREEDY_RATE)
+            next_state, reward, done, _ = env.step(action_step)
             
-            states, actions, next_state = make_state(states, actions, _next_state, action)
+            next_state = np.asarray(next_state)
 
             episode_reward += reward
 
@@ -179,7 +160,7 @@ if __name__ == '__main__':
                 actor_critic.updateTarget()
                 
             new_episode = done
-
+        
         resetVel = False
         while not resetVel:
             try:
@@ -208,8 +189,8 @@ if __name__ == '__main__':
             copy_tree(outdir,path+str(episode)+'_critic')
             
             #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'REWARD_SCALE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, REWARD_SCALE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
+            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'GREEDY_RATE', 'REWARD_SCALE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
+            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, GREEDY_RATE, REWARD_SCALE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
@@ -219,6 +200,9 @@ if __name__ == '__main__':
             
             # Show rewards graph
             plotter.plot(env, outdir)
+        
+        # Greedy rate update
+        GREEDY_RATE = max(0.05, GREEDY_RATE*0.997) # 3000eps: 0.9987, 1000eps: 0.997
         
         # Save rewards
         with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:

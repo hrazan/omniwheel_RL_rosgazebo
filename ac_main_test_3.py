@@ -30,9 +30,6 @@ def clear_monitor_files(training_dir):
         print(file)
         os.unlink(file)
 
-states = []
-actions = []
-
 if __name__ == '__main__':
     sess = tf.Session()
     tf.keras.backend.set_session(sess)
@@ -49,7 +46,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '3000' # change to epoch to continue from
+    resume_epoch = '2300' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -61,7 +58,7 @@ if __name__ == '__main__':
     with open(params_json) as outfile:
         d = json.load(outfile)
         EPISODES = 100
-        STEPS = 50
+        STEPS = 150
         UPDATE_NETWORK = d.get('UPDATE_NETWORK')
         EPSILON = 0
         EPSILON_DECAY = 0
@@ -70,6 +67,7 @@ if __name__ == '__main__':
         MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
         A_LEARNING_RATE = d.get('A_LEARNING_RATE')
         C_LEARNING_RATE = d.get('C_LEARNING_RATE')
+        GREEDY_RATE = 0
         DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
         MEMORY_SIZE = d.get('MEMORY_SIZE')
         A_HIDDEN_LAYER = d.get('A_HIDDEN_LAYER')
@@ -122,23 +120,16 @@ if __name__ == '__main__':
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         
-        first_state = env.reset()
-        first_action = np.array([0,0,0])
-        states = [first_state, first_state, first_state]
-        actions = [first_action, first_action, first_action]
-        states, actions, cur_state = make_state(states, actions, first_state, first_action)
-        """
-        cur_state = env.reset()
-        """
+        cur_state = np.asarray(env.reset())
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         new_episode = True
         while not done:
-            action, action_step = actor_critic.act(cur_state, new_episode)
-            _next_state, reward, done, _ = env.step(action_step)
+            action, action_step = actor_critic.act(cur_state, new_episode, GREEDY_RATE)
+            next_state, reward, done, _ = env.step(action_step)
             
-            states, actions, next_state = make_state(states, actions, _next_state, action)
+            next_state = np.asarray(next_state)
 
             episode_reward += reward
 
