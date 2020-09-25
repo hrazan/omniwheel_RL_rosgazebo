@@ -30,10 +30,7 @@ def clear_monitor_files(training_dir):
         print(file)
         os.unlink(file)
 
-if __name__ == '__main__':
-    sess = tf.Session()
-    tf.keras.backend.set_session(sess)
-    
+if __name__ == '__main__':    
 	#REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
     action_dim = env.action_space.shape[0]
@@ -44,11 +41,9 @@ if __name__ == '__main__':
     path = main_outdir + 'project_dqn_ep'
     
     continue_execution = False
-    if not continue_execution: os.makedirs(outdir)
-    plotter = liveplot.LivePlot(outdir)
     
     #fill this if continue_execution=True
-    resume_epoch = '2600' # change to epoch to continue from
+    resume_epoch = '900' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -104,14 +99,25 @@ if __name__ == '__main__':
         copy_tree(actor_monitor_path,outdir)
         copy_tree(critic_monitor_path,outdir)
     
+    # Initialize Tensorflow session
+    sess = tf.Session()
+    
     # Actor model to take actions 
     # state -> action
     actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE, A_HIDDEN_LAYER)
     # Critic model to evaluate the action taken by the actor
     # state + action -> Expected reward to be achieved by taking action in the state.
     critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
+    
+    # Initialize saver to save session's variables
+    saver = tf.train.Saver()
+    if not continue_execution: 
+        os.makedirs(outdir)
+        sess.run(tf.initialize_all_variables())
+    else:
+        saver.restore(sess, main_outdir + 'session_var-' + resume_epoch)
+    plotter = liveplot.LivePlot(outdir)
 
-    sess.run(tf.initialize_all_variables())
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
     
     if continue_execution : actor_critic.loadModels(actor_weights_path, critic_weights_path, actor_target_weights_path, critic_target_weights_path)
@@ -195,14 +201,17 @@ if __name__ == '__main__':
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
             
-            #save experiences data
+            # Save experiences data
             actor_critic.replay_memory.exp.to_csv(main_outdir + 'experience.csv')
             
             # Show rewards graph
             plotter.plot(env, outdir)
+            
+            # Save tf.session variables
+            saver.save(sess, main_outdir + 'session_var', global_step=episode)
         
         # Greedy rate update
-        GREEDY_RATE = max(0.05, GREEDY_RATE*0.997) # 3000eps: 0.9987, 1000eps: 0.997
+        #GREEDY_RATE = max(0.05, GREEDY_RATE*0.997) # 3000eps: 0.9987, 1000eps: 0.997
         
         # Save rewards
         with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
