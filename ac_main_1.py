@@ -38,12 +38,12 @@ if __name__ == '__main__':
     
     main_outdir = '/home/katolab/experiment_data/AC_data_1/'
     outdir = main_outdir + 'gazebo_gym_experiments/'
-    path = main_outdir + 'project_dqn_ep'
+    path = main_outdir + 'project_ac_ep'
     
-    continue_execution = False
+    continue_execution = True
     
     #fill this if continue_execution=True
-    resume_epoch = '900' # change to epoch to continue from
+    resume_epoch = '2300' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 1000
+        EPISODES = 3000
         STEPS = 150
         UPDATE_NETWORK = 1 # once per number of steps
         MINIBATCH_SIZE = 64
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         os.makedirs(outdir)
         sess.run(tf.initialize_all_variables())
     else:
-        saver.restore(sess, main_outdir + 'session_var-' + resume_epoch)
+        saver.restore(sess, main_outdir + 'project_ac_session_var-' + resume_epoch)
     plotter = liveplot.LivePlot(outdir)
 
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, continue_execution, MEMORIES)
@@ -208,10 +208,10 @@ if __name__ == '__main__':
             plotter.plot(env, outdir)
             
             # Save tf.session variables
-            saver.save(sess, main_outdir + 'session_var', global_step=episode)
+            saver.save(sess, main_outdir + 'project_ac_session_var', global_step=episode)
         
         # Greedy rate update
-        #GREEDY_RATE = max(0.05, GREEDY_RATE*0.997) # 3000eps: 0.9987, 1000eps: 0.997
+        GREEDY_RATE = max(0.05, GREEDY_RATE*0.9987) # 3000eps: 0.9987, 1000eps: 0.997
         
         # Save rewards
         with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
