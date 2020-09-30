@@ -39,14 +39,14 @@ if __name__ == '__main__':
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
-    main_outdir = '/home/katolab/experiment_data/AC_data_0/'
+    main_outdir = '/home/katolab/experiment_data/AC_data_5/'
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_dqn_ep'
     
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '2600' # change to epoch to continue from
+    resume_epoch = '1000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
