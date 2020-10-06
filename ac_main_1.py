@@ -40,10 +40,10 @@ if __name__ == '__main__':
     outdir = main_outdir + 'gazebo_gym_experiments/'
     path = main_outdir + 'project_ac_ep'
     
-    continue_execution = True
+    continue_execution = False
     
     #fill this if continue_execution=True
-    resume_epoch = '2300' # change to epoch to continue from
+    resume_epoch = '3000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'

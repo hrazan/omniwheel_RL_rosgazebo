@@ -31,22 +31,19 @@ def clear_monitor_files(training_dir):
         os.unlink(file)
 
 if __name__ == '__main__':
-    sess = tf.Session()
-    tf.keras.backend.set_session(sess)
-    
-	#REMEMBER!: project_setup.bash must be executed.
+    #REMEMBER!: project_setup.bash must be executed.
     env = gym.make('GazeboProjectTurtlebotAc-v0')
     action_dim = env.action_space.shape[0]
     observation_dim = env.observation_space.shape
     
     main_outdir = '/home/katolab/experiment_data/AC_data_3/'
     outdir = main_outdir + 'gazebo_gym_experiments/'
-    path = main_outdir + 'project_dqn_ep'
+    path = main_outdir + 'project_ac_ep'
     
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '1000' # change to epoch to continue from
+    resume_epoch = '3000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -79,6 +76,9 @@ if __name__ == '__main__':
     copy_tree(actor_monitor_path,outdir)
     copy_tree(critic_monitor_path,outdir)
     
+    # Initialize Tensorflow session
+    sess = tf.Session()
+    
     # Actor model to take actions 
     # state -> action
     actor = ac.Actor(sess, action_dim, observation_dim, A_LEARNING_RATE, A_HIDDEN_LAYER)
@@ -86,7 +86,11 @@ if __name__ == '__main__':
     # state + action -> Expected reward to be achieved by taking action in the state.
     critic = ac.Critic(sess, action_dim, observation_dim, C_LEARNING_RATE, C_HIDDEN_LAYER)
 
-    sess.run(tf.initialize_all_variables())
+    # Initialize saver to save session's variables
+    saver = tf.train.Saver()
+    saver.restore(sess, main_outdir + 'project_ac_session_var-' + resume_epoch)
+    plotter = liveplot.LivePlot(outdir)
+    
     actor_critic = ac.ActorCritic(env, actor, critic, DISCOUNT_FACTOR, MINIBATCH_SIZE, MEMORY_SIZE, TARGET_DISCOUNT, False, None)
     
     # Load weights to NN
