@@ -107,20 +107,40 @@ if __name__ == '__main__':
     
     env.set_start_mode("static") #"random" or "static"
 
-    #start iterating from 'current epoch'.
+    states = []
+    actions = []
+    def make_state(states, actions, state, action):
+        # update states and actions
+        states.pop(0)
+        actions.pop(0)
+        states.append(state)
+        actions.append(action)
+        
+        # merge past state and action
+        _state = []
+        for i in range(len(states)):
+            _state += list(actions[i]) + list(states[i])
+        return states, actions, np.asarray(tuple(_state))   
+    
+    #start iterating from 'current epoch'
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         
-        cur_state = np.asarray(env.reset())
+        first_state = env.reset()
+        first_action = np.array([0,0,0])
+        states = [first_state, first_state, first_state]
+        actions = [first_action, first_action, first_action]
+        states, actions, cur_state = make_state(states, actions, first_state, first_action)
+        
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         new_episode = True
         while not done:
             action, action_step = actor_critic.act(cur_state, new_episode, GREEDY_RATE)
-            next_state, reward, done, _ = env.step(action_step)
+            _next_state, reward, done, _ = env.step(action_step)
             
-            next_state = np.asarray(next_state)
+            states, actions, next_state = make_state(states, actions, _next_state, action)
 
             episode_reward += reward
 
