@@ -43,7 +43,7 @@ if __name__ == '__main__':
     continue_execution = False
     
     #fill this if continue_execution=True
-    resume_epoch = '900' # change to epoch to continue from
+    resume_epoch = '3000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -60,16 +60,16 @@ if __name__ == '__main__':
         EPISODES = 3000
         STEPS = 150
         UPDATE_NETWORK = 1 # once per number of steps
-        MINIBATCH_SIZE = 64
-        MINIMUM_REPLAY_MEMORY = 64
+        MINIBATCH_SIZE = 128
+        MINIMUM_REPLAY_MEMORY = 128
         A_LEARNING_RATE = 0.0001
         C_LEARNING_RATE = 0.0001
         GREEDY_RATE = 1
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 100000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        MEMORY_SIZE = 450000
+        A_HIDDEN_LAYER = [1024,1024,1024]
+        C_HIDDEN_LAYER = [[],[],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
@@ -133,20 +133,41 @@ if __name__ == '__main__':
     
     env.set_start_mode("random") #"random" or "static"
     
+    
+    states = []
+    actions = []
+    def make_state(states, actions, state, action):
+        # update states and actions
+        states.pop(0)
+        actions.pop(0)
+        states.append(state)
+        actions.append(action)
+        
+        # merge past state and action
+        _state = []
+        for i in range(len(states)):
+            _state += list(actions[i]) + list(states[i])
+        return states, actions, np.asarray(tuple(_state))   
+    
     #start iterating from 'current epoch'
     for episode in xrange(CURRENT_EPISODE+1, EPISODES+1, 1):
         done = False
         
-        cur_state = np.asarray(env.reset())
+        first_state = env.reset()
+        first_action = np.array([0,0,0])
+        states = [first_state, first_state, first_state]
+        actions = [first_action, first_action, first_action]
+        states, actions, cur_state = make_state(states, actions, first_state, first_action)
+        
         action_memory = memory.Memory(STEPS)
         episode_reward = 0
         episode_step = 0
         new_episode = True
         while not done:
             action, action_step = actor_critic.act(cur_state, new_episode, GREEDY_RATE)
-            next_state, reward, done, _ = env.step(action_step)
+            _next_state, reward, done, _ = env.step(action_step)
             
-            next_state = np.asarray(next_state)
+            states, actions, next_state = make_state(states, actions, _next_state, action)
 
             episode_reward += reward
 
