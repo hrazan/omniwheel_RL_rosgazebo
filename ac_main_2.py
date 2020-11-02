@@ -43,7 +43,7 @@ if __name__ == '__main__':
     continue_execution = False
     
     #fill this if continue_execution=True
-    resume_epoch = '1900' # change to epoch to continue from
+    resume_epoch = '3000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 5000
+        EPISODES = 3000
         STEPS = 50
         UPDATE_NETWORK = 1 # once per number of actions
         MINIBATCH_SIZE = 128
@@ -67,8 +67,8 @@ if __name__ == '__main__':
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 250000
-        A_HIDDEN_LAYER = [1024,1024,1024]
-        C_HIDDEN_LAYER = [[512],[128],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[256],[64],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None

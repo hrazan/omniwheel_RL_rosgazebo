@@ -43,7 +43,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '10000' # change to epoch to continue from
+    resume_epoch = '3000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
