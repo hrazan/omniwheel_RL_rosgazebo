@@ -43,33 +43,32 @@ if __name__ == '__main__':
     continue_execution = False
     
     #fill this if continue_execution=True
-    resume_epoch = '3000' # change to epoch to continue from
+    resume_epoch = '1900' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
     critic_weights_path = resume_path + '_critic.h5'
     critic_target_weights_path = resume_path + '_critic_target.h5'
-    actor_monitor_path = resume_path + '_actor'
-    critic_monitor_path = resume_path + '_critic'
     params_json  = resume_path + '.json'
     
     if not continue_execution:
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 3000
-        STEPS = 150
-        UPDATE_NETWORK = 1 # once per number of steps
+        EPISODES = 5000
+        STEPS = 50
+        UPDATE_NETWORK = 1 # once per number of actions
         MINIBATCH_SIZE = 128
-        MINIMUM_REPLAY_MEMORY = 128
+        MINIMUM_REPLAY_MEMORY = 1000
         A_LEARNING_RATE = 0.0001
         C_LEARNING_RATE = 0.0001
+        GREEDY_BOOL = False
         GREEDY_RATE = 1
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
-        MEMORY_SIZE = 450000
+        MEMORY_SIZE = 250000
         A_HIDDEN_LAYER = [1024,1024,1024]
-        C_HIDDEN_LAYER = [[],[],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
+        C_HIDDEN_LAYER = [[512],[128],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
@@ -85,6 +84,7 @@ if __name__ == '__main__':
             MINIMUM_REPLAY_MEMORY = d.get('MINIMUM_REPLAY_MEMORY')
             A_LEARNING_RATE = d.get('A_LEARNING_RATE')
             C_LEARNING_RATE = d.get('C_LEARNING_RATE')
+            GREEDY_BOOL = d.get('GREEDY_BOOL')
             GREEDY_RATE = d.get('GREEDY_RATE')
             REWARD_SCALE = d.get('REWARD_SCALE')
             DISCOUNT_FACTOR = d.get('DISCOUNT_FACTOR')
@@ -96,8 +96,6 @@ if __name__ == '__main__':
             MEMORIES = pd.read_csv(main_outdir + 'experience.csv', index_col=0, dtype = {'reward':np.float64, 'done':np.float32})
             
         clear_monitor_files(outdir)
-        copy_tree(actor_monitor_path,outdir)
-        copy_tree(critic_monitor_path,outdir)
     
     # Initialize Tensorflow session
     sess = tf.Session()
@@ -131,8 +129,7 @@ if __name__ == '__main__':
     
     start_time = time.time()
     
-    env.set_start_mode("random") #"random" or "static"
-    
+    env.set_start_mode("random") #"random" or "static"    
     
     states = []
     actions = []
@@ -182,11 +179,11 @@ if __name__ == '__main__':
 
             if len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY:
                 actor_critic.train('random')
-            
-            if stepCounter%UPDATE_NETWORK == 0:
-                actor_critic.updateTarget()
+                if episode%UPDATE_NETWORK == 0: actor_critic.updateTarget()
                 
             new_episode = done
+                          
+        if (len(actor_critic.replay_memory.exp.index) >= MINIMUM_REPLAY_MEMORY) and episode%UPDATE_NETWORK == 0: actor_critic.updateTarget()
         
         resetVel = False
         while not resetVel:
@@ -212,12 +209,10 @@ if __name__ == '__main__':
             #save model weights and monitoring data every 100 epochs.
             actor_critic.saveModel(path+str(episode)+'_actor.h5', path+str(episode)+'_critic.h5', path+str(episode)+'_actor_target.h5', path+str(episode)+'_critic_target.h5')
             env._flush()
-            copy_tree(outdir,path+str(episode)+'_actor')
-            copy_tree(outdir,path+str(episode)+'_critic')
             
             #save simulation parameters.
-            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'GREEDY_RATE', 'REWARD_SCALE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
-            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, GREEDY_RATE, REWARD_SCALE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
+            parameter_keys = ['EPISODES', 'STEPS', 'UPDATE_NETWORK', 'MINIBATCH_SIZE', 'MINIMUM_REPLAY_MEMORY', 'A_LEARNING_RATE', 'C_LEARNING_RATE', 'GREEDY_BOOL', 'GREEDY_RATE', 'REWARD_SCALE', 'DISCOUNT_FACTOR', 'MEMORY_SIZE', 'A_HIDDEN_LAYER', 'C_HIDDEN_LAYER', 'CURRENT_EPISODE', 'TARGET_DISCOUNT']
+            parameter_values = [EPISODES, STEPS, UPDATE_NETWORK, MINIBATCH_SIZE, MINIMUM_REPLAY_MEMORY, A_LEARNING_RATE, C_LEARNING_RATE, GREEDY_BOOL, GREEDY_RATE, REWARD_SCALE, DISCOUNT_FACTOR, MEMORY_SIZE, A_HIDDEN_LAYER, C_HIDDEN_LAYER, episode, TARGET_DISCOUNT]
             parameter_dictionary = dict(zip(parameter_keys, parameter_values))
             with open(path+str(episode)+'.json', 'w') as outfile:
                 json.dump(parameter_dictionary, outfile)
@@ -232,7 +227,7 @@ if __name__ == '__main__':
             saver.save(sess, main_outdir + 'project_ac_session_var', global_step=episode)
         
         # Greedy rate update
-        GREEDY_RATE = max(0.05, GREEDY_RATE*0.9987) # 3000eps: 0.9987, 1000eps: 0.997
+        if GREEDY_BOOL: GREEDY_RATE = max(0.05, GREEDY_RATE*0.9987) # 3000eps: 0.9987, 1000eps: 0.997
         
         # Save rewards
         with open(main_outdir + 'reward_ac.csv','a+') as csvRWRD:
@@ -241,4 +236,5 @@ if __name__ == '__main__':
         csvRWRD.close()
             
     env.close()
+
 

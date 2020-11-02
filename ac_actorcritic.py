@@ -95,7 +95,7 @@ class Critic:
         merge_h = hiddenLayer[2][:]
         
         # Before merging with action
-        # Critic's Hidden Layers
+        # State's Hidden Layers
         state_input = Input(shape=self.observation_dim)
         try:
             state_h[0] = Dense(state_h[0], activation='relu')(state_input)
@@ -106,7 +106,7 @@ class Critic:
         except:
             input_merge = Dense(merge_h[0], activation='relu')(state_input)
         
-        # Actor's Hidden Layers
+        # Action's Hidden Layers
         action_input = Input(shape=(self.action_dim,))
         try:
             action_h[0] = Dense(merge_h[0], activation='relu')(action_input)

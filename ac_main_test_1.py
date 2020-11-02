@@ -43,7 +43,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '3000' # change to epoch to continue from
+    resume_epoch = '5000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     with open(params_json) as outfile:
         d = json.load(outfile)
         EPISODES = 100
-        STEPS = 150
+        STEPS = 50
         UPDATE_NETWORK = d.get('UPDATE_NETWORK')
         EPSILON = 0
         EPSILON_DECAY = 0
@@ -73,8 +73,6 @@ if __name__ == '__main__':
         TARGET_DISCOUNT = d.get('TARGET_DISCOUNT')
             
     clear_monitor_files(outdir)
-    copy_tree(actor_monitor_path,outdir)
-    copy_tree(critic_monitor_path,outdir)
     
     # Initialize Tensorflow session
     sess = tf.Session()
@@ -189,3 +187,4 @@ if __name__ == '__main__':
         csvRWRD.close()
         
     env.close()
+
