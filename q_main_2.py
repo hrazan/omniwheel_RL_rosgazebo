@@ -33,7 +33,7 @@ if __name__ == '__main__':
     main_outdir = '/home/katolab/experiment_data/Q_data_2/'
     qtabledir = main_outdir + 'qtable.csv'
     
-    continue_execution = False
+    continue_execution = True
     if not continue_execution: os.makedirs(main_outdir)
     
     # Initiate learning information
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     last_time_steps = numpy.ndarray(0)
 
     qlearn = qlearn.QLearn(actions=range(env.action_space.n),
-                    alpha=0.2, gamma=0.8, epsilon=0.51, qdir=qtabledir)
+                    alpha=0.2, gamma=0.8, epsilon=1, qdir=qtabledir)
 
     initial_epsilon = qlearn.epsilon
 
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     avg_steps = 0
     
     # True if you want to start with a random position
-    env.set_randomstart(False)
+    env.set_randomstart(True)
 
     for x in range(total_episodes):
         done = False
