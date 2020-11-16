@@ -43,7 +43,7 @@ if __name__ == '__main__':
     plotter = liveplot.LivePlot(outdir)
     
     #fill this
-    resume_epoch = '3000' # change to epoch to continue from
+    resume_epoch = '5000' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     critic_weights_path = resume_path + '_critic.h5'
@@ -116,8 +116,9 @@ if __name__ == '__main__':
         
         # merge past state and action
         _state = []
-        for i in range(len(states)):
-            _state += list(actions[i]) + list(states[i])
+        for i in range(len(states)-1):
+            _state += list(states[i]) + list(actions[i])
+        _state += list(states[len(states)-1])
         return states, actions, np.asarray(tuple(_state))   
     
     #start iterating from 'current epoch'
@@ -127,7 +128,7 @@ if __name__ == '__main__':
         first_state = env.reset()
         first_action = np.array([0,0,0])
         states = [first_state, first_state, first_state]
-        actions = [first_action, first_action, first_action]
+        actions = [first_action, first_action]
         states, actions, cur_state = make_state(states, actions, first_state, first_action)
         
         action_memory = memory.Memory(STEPS)
