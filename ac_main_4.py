@@ -43,7 +43,7 @@ if __name__ == '__main__':
     continue_execution = False
     
     #fill this if continue_execution=True
-    resume_epoch = '3000' # change to epoch to continue from
+    resume_epoch = '1600' # change to epoch to continue from
     resume_path = path + resume_epoch
     actor_weights_path =  resume_path + '_actor.h5'
     actor_target_weights_path =  resume_path + '_actor_target.h5'
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         #Each time we take a sample and update our weights it is called a mini-batch.
         #Each time we run through the entire dataset, it's called an epoch.
         #PARAMETER LIST
-        EPISODES = 3000
+        EPISODES = 5000
         STEPS = 50
         UPDATE_NETWORK = 1 # once per number of actions
         MINIBATCH_SIZE = 128
@@ -67,8 +67,8 @@ if __name__ == '__main__':
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 250000
-        A_HIDDEN_LAYER = [512,512,512]
-        C_HIDDEN_LAYER = [[256],[64],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
+        A_HIDDEN_LAYER = [1024,1024,1024]
+        C_HIDDEN_LAYER = [[],[],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
@@ -142,8 +142,9 @@ if __name__ == '__main__':
         
         # merge past state and action
         _state = []
-        for i in range(len(states)):
-            _state += list(actions[i]) + list(states[i])
+        for i in range(len(states)-1):
+            _state += list(states[i]) + list(actions[i])
+        _state += list(states[len(states)-1])
         return states, actions, np.asarray(tuple(_state))   
     
     #start iterating from 'current epoch'
@@ -153,7 +154,7 @@ if __name__ == '__main__':
         first_state = env.reset()
         first_action = np.array([0,0,0])
         states = [first_state, first_state, first_state]
-        actions = [first_action, first_action, first_action]
+        actions = [first_action, first_action]
         states, actions, cur_state = make_state(states, actions, first_state, first_action)
         
         action_memory = memory.Memory(STEPS)
