@@ -61,14 +61,14 @@ if __name__ == '__main__':
         MINIBATCH_SIZE = 128
         MINIMUM_REPLAY_MEMORY = 1000
         A_LEARNING_RATE = 0.0001
-        C_LEARNING_RATE = 0.0001
+        C_LEARNING_RATE = 0.0003
         GREEDY_BOOL = False
         GREEDY_RATE = 1
         REWARD_SCALE = 0.1
         DISCOUNT_FACTOR = 0.99
         MEMORY_SIZE = 250000
-        A_HIDDEN_LAYER = [1024,1024,1024]
-        C_HIDDEN_LAYER = [[],[],[1024,1024,1024]] # [[before merging critic],[before merging actor],[after merging]]
+        A_HIDDEN_LAYER = [512,512,512]
+        C_HIDDEN_LAYER = [[],[],[512,512,512]] # [[before merging critic],[before merging actor],[after merging]]
         CURRENT_EPISODE = 0
         TARGET_DISCOUNT = 0.001 # [0,1] 0: don't update target weights, 1: update target wieghts 100% from model weights
         MEMORIES = None
