@@ -55,7 +55,7 @@ if __name__ == '__main__':
     with open(params_json) as outfile:
         d = json.load(outfile)
         EPISODES = 100
-        STEPS = 300
+        STEPS = 120
         UPDATE_NETWORK = d.get('UPDATE_NETWORK')
         EPSILON = 0
         EPSILON_DECAY = 0
@@ -163,11 +163,14 @@ if __name__ == '__main__':
         m, s = divmod(int(time.time() - start_time), 60)
         h, m = divmod(m, 60)
         
+        if env.subgoal_as_dist_to_goal < min_distance:
+            min_distance = env.subgoal_as_dist_to_goal
+            action_memory.exp.to_csv(outdir + resume_epoch + '_min_distance.csv')
         if max_reward < episode_reward:
             max_reward = episode_reward
             action_memory.exp.to_csv(outdir + resume_epoch + '_max_reward.csv')
         
-        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " R: " + str(episode_reward) + " | Dist: " + str(env.subgoal_as_dist_to_goal) + " | Max R: " + str(max_reward) + " | Total goal: " + str(env.goalsum) + "| Time: %d:%02d:%02d" % (h, m, s))
+        print("EP:" + str(episode) + " - " + str(episode_step) + "/" + str(STEPS) + " steps |" + " R: " + str(episode_reward) + " | Dist: " + str(env.subgoal_as_dist_to_goal) + " | Max R: " + str(max_reward) + " | Min Dist: " + str(min_distance) + "| Time: %d:%02d:%02d" % (h, m, s))
         
         if (episode)%100==0:
             env._flush()
@@ -181,8 +184,9 @@ if __name__ == '__main__':
         # Save rewards
         with open(outdir + resume_epoch + '_test_reward_ac.csv','a+') as csvRWRD:
             csvRWRD_writer = csv.writer(csvRWRD,dialect='excel')
-            csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.goalsum])
+            csvRWRD_writer.writerow([episode, episode_step, episode_reward, env.subgoal_as_dist_to_goal])
         csvRWRD.close()
         
     env.close()
+
 
